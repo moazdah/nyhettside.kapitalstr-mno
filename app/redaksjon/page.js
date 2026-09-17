@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { getAdminData } from '../../lib/admin-db';
 import { clockTime, fullDate, marketValue } from '../../lib/format';
-import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
+import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, runNewsRadarAction, scoreRadarItemsAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 const tabs = [
   ['ko', 'Kø til godkjenning'],
+  ['radar', 'Nyhetsradar'],
   ['forside', 'Forsideprioritering'],
   ['publisert', 'Publisert'],
   ['siste', 'Siste nytt'],
@@ -35,6 +36,29 @@ function Queue({ items }) {
     <td>{clockTime(a.created_at)}</td>
     <td className="adminActions"><form action={approveAction}><input type="hidden" name="id" value={a.id}/><button>Godkjenn</button></form><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Avvis</button></form></td>
   </tr>)}</tbody></table></div>;
+}
+
+function NewsRadar({ items }) {
+  const waiting = items.filter((i) => i.ai_score == null).length;
+  const candidates = items.filter((i) => Number(i.ai_score) >= 60).length;
+  return <>
+    <div className="sourceToolbar">
+      <div><b>Nyhetsradar – discovery</b><small>Henter overskrifter og metadata fra åpne RSS-feeder og GDELTs globale nyhetsindeks. Andre medier brukes som tipsradar, ikke som tekstgrunnlag. Hvert nytt treff får en kildejournal.</small></div>
+      <form action={runNewsRadarAction}><button>Kjør radar nå</button></form>
+    </div>
+    <div className="sourceToolbar">
+      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer nyhetsverdi, seksjon, hendelsestype og neste kildegrep. Den skriver ingen artikkel. {waiting} av de viste treffene venter vurdering · {candidates} scorer 60+.</small></div>
+      <form action={scoreRadarItemsAction}><button>Vurder nye treff</button></form>
+    </div>
+    {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
+      <td>{i.ai_score == null ? '—' : <span className="scoreBadge">{i.ai_score}</span>}</td>
+      <td>{i.published_at ? fullDate(i.published_at) : fullDate(i.discovered_at)}</td>
+      <td><a href={i.url} target="_blank" rel="noreferrer"><b>{i.title}</b></a>{i.ai_reason ? <small>{i.ai_section || '—'} · {i.ai_reason}</small> : (i.summary ? <small>{i.summary}</small> : null)}</td>
+      <td>{i.source_domain || i.source_name}<small>{i.source_kind}</small></td>
+      <td>{i.candidate_type || 'Ikke vurdert'}</td>
+      <td>{i.credit_required ? <span className="validation warn">KREDITER TYDELIG</span> : (i.next_step || 'Venter AI')}{i.primary_source_status === 'unverified' ? <small>Primærkilde ikke verifisert</small> : null}</td>
+    </tr>)}</tbody></table></div>}
+  </>;
 }
 
 function FrontPage({ items }) {
@@ -105,6 +129,7 @@ export default async function RedaksjonPage({ searchParams }) {
         <section className="adminMain">
           <div className="adminPageTitle"><div><div className="eyebrow">Redaksjonspanel</div><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><Link href="/" className="secondaryLink">Åpne forsiden →</Link></div>
           {active === 'ko' && <Queue items={data.queue}/>} 
+          {active === 'radar' && <NewsRadar items={data.radarItems}/>} 
           {active === 'forside' && <FrontPage items={data.liveOrder}/>} 
           {active === 'publisert' && <Published items={data.published}/>} 
           {active === 'siste' && <Feed items={data.feed}/>} 
@@ -112,10 +137,12 @@ export default async function RedaksjonPage({ searchParams }) {
         </section>
         <aside className="adminAside">
           <div className="adminStat"><span>Utkast i kø</span><strong>{data.queue.length}</strong></div>
+          <div className="adminStat"><span>Radar-treff</span><strong>{data.radarItems.length}</strong></div>
           <div className="adminStat"><span>Publisert</span><strong>{data.published.length}</strong></div>
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
-          <div className="adminNote"><b>AI-flyt</b><p>Først scores råmeldinger i batch. Neste steg blir å skrive bare saker over terskelen, validere tall og legge dem i køen. Ingenting autopubliseres i denne testen.</p></div>
+          <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Før artikkelskriving skal systemet skille oppdagelseskilde, primærkilde og eventuelle kilder som må krediteres tydelig.</p></div>
+          <div className="adminNote"><b>AI-flyt</b><p>Radaren oppdager og prioriterer. Børsmeldinger scores separat. Artikkelmotoren kobles først på etter at kilde- og faktapakken er testet.</p></div>
           <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
       </div>
