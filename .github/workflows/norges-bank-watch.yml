@@ -1,0 +1,19 @@
+name: Norges Bank rentevakt
+
+on:
+  schedule:
+    - cron: '*/5 6-16 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  poll-norges-bank:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Kapitalstrøm rentevakt
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET"
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://nyhettside-kapitalstr-mno-ashy.vercel.app/api/cron/norges-bank"
