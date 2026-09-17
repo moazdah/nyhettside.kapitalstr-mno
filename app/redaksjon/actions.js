@@ -8,6 +8,7 @@ import { approveDraft, archiveArticle, rejectDraft, setPinned } from '../../lib/
 import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
 import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
 import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
+import { scorePendingRawItems } from '../../lib/ai/score-raw-items';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -68,5 +69,11 @@ export async function syncPolicyRateAction() {
 export async function syncEuronextOsloAction() {
   await requireAdmin();
   await syncEuronextOsloNews();
+  revalidatePath('/redaksjon');
+}
+
+export async function scoreRawItemsAction() {
+  await requireAdmin();
+  await scorePendingRawItems(20);
   revalidatePath('/redaksjon');
 }
