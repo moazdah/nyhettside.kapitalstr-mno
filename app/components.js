@@ -10,7 +10,7 @@ export function Header({ markets = [] }) {
           <nav className="mainNav">
             <a href="#">Markeder</a><a href="#">Økonomi</a><a href="#">Renter</a><a href="#">Selskaper</a><a href="#">Analyse</a><a href="#">Kalender</a>
           </nav>
-          <div className="headerActions"><span className="search">⌕</span><a href="#">Redaksjon</a><a href="#">Logg inn</a><button>Abonner</button></div>
+          <div className="headerActions"><span className="search">⌕</span><Link href="/redaksjon">Redaksjon</Link><Link href="/redaksjon/login">Logg inn</Link><button>Abonner</button></div>
         </div>
       </header>
       <div className="ticker">
