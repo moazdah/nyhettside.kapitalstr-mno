@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getAdminData } from '../../lib/admin-db';
-import { clockTime, fullDate } from '../../lib/format';
-import { approveAction, archiveAction, logoutAction, pinAction, rejectAction } from './actions';
+import { clockTime, fullDate, marketValue } from '../../lib/format';
+import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,9 +52,18 @@ function Feed({ items }) {
   return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Tid</th><th>Melding</th><th>Seksjon</th><th>Status</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}><td>{clockTime(i.tidspunkt)}</td><td><b>{i.tekst}</b></td><td>{i.seksjon || '—'}</td><td>{i.status}</td></tr>)}</tbody></table></div>;
 }
 
-function Sources({ items }) {
-  if (!items.length) return <Empty>Ingen kilder er lagt inn ennå. Norges Bank blir første adapter.</Empty>;
-  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Kilde</th><th>Type</th><th>Intervall</th><th>Status</th><th>Sist hentet</th></tr></thead><tbody>{items.map((s) => <tr key={s.id}><td><b>{s.navn}</b><small>{s.url}</small></td><td>{s.type}</td><td>{s.intervall_min} min</td><td>{s.aktiv ? 'Aktiv' : 'Av'}</td><td>{s.sist_hentet ? fullDate(s.sist_hentet) : 'Aldri'}</td></tr>)}</tbody></table></div>;
+function Sources({ items, policyRate }) {
+  return <>
+    <div className="sourceToolbar">
+      <div><b>Norges Bank – markeder og styringsrente</b><small>Henter offisielle valutakurser og overvåker styringsrenten. Ved en faktisk renteendring lages et utkast med score 100 i redaksjonskøen – ingenting autopubliseres ennå.</small></div>
+      <form action={syncNorgesBankAction}><button>Oppdater alt nå</button></form>
+    </div>
+    <div className="sourceToolbar">
+      <div><b>Styringsrente</b><small>{policyRate ? `Sist registrert: ${marketValue('NOKPOLICY', policyRate.verdi)} · oppdatert ${fullDate(policyRate.oppdatert)}` : 'Ikke registrert ennå. Første sjekk oppretter bare referanseverdien.'}</small></div>
+      <form action={syncPolicyRateAction}><button className="secondary">Sjekk renten nå</button></form>
+    </div>
+    {!items.length ? <Empty>Ingen kilder er registrert ennå. Trykk «Oppdater alt nå» for å koble til Norges Bank.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Kilde</th><th>Type</th><th>Intervall</th><th>Status</th><th>Sist hentet</th></tr></thead><tbody>{items.map((s) => <tr key={s.id}><td><b>{s.navn}</b><small>{s.url}</small></td><td>{s.type}</td><td>{s.intervall_min} min</td><td>{s.aktiv ? 'Aktiv' : 'Av'}</td><td>{s.sist_hentet ? fullDate(s.sist_hentet) : 'Aldri'}</td></tr>)}</tbody></table></div>}
+  </>;
 }
 
 export default async function RedaksjonPage({ searchParams }) {
@@ -77,14 +86,14 @@ export default async function RedaksjonPage({ searchParams }) {
           {active === 'forside' && <FrontPage items={data.liveOrder}/>} 
           {active === 'publisert' && <Published items={data.published}/>} 
           {active === 'siste' && <Feed items={data.feed}/>} 
-          {active === 'kilder' && <Sources items={data.sources}/>} 
+          {active === 'kilder' && <Sources items={data.sources} policyRate={data.policyRate}/>} 
         </section>
         <aside className="adminAside">
           <div className="adminStat"><span>Utkast i kø</span><strong>{data.queue.length}</strong></div>
           <div className="adminStat"><span>Publisert</span><strong>{data.published.length}</strong></div>
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
-          <div className="adminNote"><b>Neste milepæl</b><p>Norges Bank-adapter og ekte markedsdata. AI forblir avslått til redaksjonsflyten er testet.</p></div>
+          <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Automatisk høyfrekvent kjøring aktiveres separat når CRON_SECRET og tidsplan er på plass.</p></div>
         </aside>
       </div>
     </main>

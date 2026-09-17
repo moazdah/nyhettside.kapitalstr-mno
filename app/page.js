@@ -56,7 +56,7 @@ export default async function Home() {
           <div className="marketCards">
             {markets.slice(0,6).map((m) => {
               const delta = Number(m.endring_pct);
-              return <div className="marketCard" key={m.symbol}><b>{m.navn}</b><strong>{marketValue(m.symbol, m.verdi)}</strong><span className={delta >= 0 ? 'up' : 'down'}>{marketDelta(delta)}</span></div>;
+              return <div className="marketCard" key={m.symbol}><b>{m.navn}</b><strong>{marketValue(m.symbol, m.verdi)}</strong><span className={delta >= 0 ? 'up' : 'down'}>{marketDelta(delta, m.symbol)}</span></div>;
             })}
           </div>
         </section>

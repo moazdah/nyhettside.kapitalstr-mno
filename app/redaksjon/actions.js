@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { expectedSessionValue, safeEqual, SESSION_COOKIE } from '../../lib/auth';
 import { approveDraft, archiveArticle, rejectDraft, setPinned } from '../../lib/admin-db';
+import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
+import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -44,6 +46,20 @@ export async function pinAction(formData) {
   const id = Number(formData.get('id'));
   const pinned = String(formData.get('pinned')) === 'true';
   await setPinned(id, pinned);
+  revalidatePath('/');
+  revalidatePath('/redaksjon');
+}
+
+export async function syncNorgesBankAction() {
+  await requireAdmin();
+  await Promise.all([syncNorgesBankFx(), syncNorgesBankPolicyRate()]);
+  revalidatePath('/');
+  revalidatePath('/redaksjon');
+}
+
+export async function syncPolicyRateAction() {
+  await requireAdmin();
+  await syncNorgesBankPolicyRate();
   revalidatePath('/');
   revalidatePath('/redaksjon');
 }

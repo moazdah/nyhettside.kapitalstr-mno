@@ -21,7 +21,7 @@ export function Header({ markets = [] }) {
               <div className="tickerItem" key={m.symbol}>
                 <b>{m.navn}</b>
                 <span>{marketValue(m.symbol, m.verdi)}</span>
-                <span className={delta >= 0 ? 'up' : 'down'}>{marketDelta(delta)}</span>
+                <span className={delta >= 0 ? 'up' : 'down'}>{marketDelta(delta, m.symbol)}</span>
               </div>
             );
           })}
