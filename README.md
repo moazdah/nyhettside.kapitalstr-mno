@@ -1,20 +1,19 @@
-# Kapitalstrøm
+# Kapitalstrøm v2 — Neon koblet til Next.js
 
-Første produksjonsklare Next.js-start basert på designspesifikasjonen i `docs/OVERLEVERING.md`.
+Denne versjonen erstatter hardkodede forside-, feed- og markedsdata med data fra Neon Postgres via `DATABASE_URL`.
 
-## Lokal kjøring
+## Krever i Vercel
 
-```bash
-npm install
-npm run dev
-```
+- `DATABASE_URL` fra Neon-integrasjonen
 
-Åpne http://localhost:3000.
+## Datadrevet nå
+
+- Forsideartikler fra `articles` (`status = 'live'`)
+- Siste nytt fra `feed`
+- Markedsdata fra `markets`
+- Dynamiske artikkelsider på `/artikkel/[slug]`
+- Helsesjekk på `/api/health`
 
 ## Deploy
 
-1. Last innholdet i denne mappen opp til GitHub-repoet.
-2. Importer repoet i Vercel.
-3. Vercel oppdager Next.js automatisk.
-
-Dette er foreløpig frontend med dummydata. Database, redaksjonspanel, kilder, AI-kjede og cron kobles på i neste steg.
+Last prosjektfilene opp til GitHub-repoets rot. Vercel deployer automatisk fra `main`.
