@@ -1,33 +1,20 @@
-# Kapitalstrøm v4.1 — Norges Bank + rentevakt
+# Kapitalstrøm v4.2 — Norges Bank + rentevakt + korrekt FX-enhet
 
-Denne versjonen bygger videre på v4 og legger til overvåking av Norges Banks styringsrente.
+Denne versjonen bygger videre på v4.1 og retter visningen av valutapar som Norges Bank leverer per 100 valutaenheter.
 
-## Nytt i v4.1
+## Nytt i v4.2
 
-- Beholder valutakursadapteren for USD/NOK, EUR/NOK, GBP/NOK, SEK/NOK, DKK/NOK og CHF/NOK.
-- Ny egen adapter for **styringsrenten**.
-- Leser Norges Banks offisielle styringsrenteside først, med API-serien som reserve/bekreftelse.
-- Lagrer styringsrenten i `markets` som `NOKPOLICY`.
-- Viser styringsrenten i ticker/markedsdata med endring i prosentpoeng.
-- Første kjøring oppretter bare referanseverdien.
-- Dersom styringsrenten senere endres, opprettes automatisk:
-  - et `raw_items`-element,
-  - et artikkelutkast med score 100 og `tall_validert = true`,
-  - en `feed`-melding med status `draft`.
-- **Ingenting autopubliseres ennå.** Redaktøren må fortsatt godkjenne.
-- Ny beskyttet endpoint: `GET /api/cron/norges-bank` med `Authorization: Bearer $CRON_SECRET`.
-- Redaksjon → Kilder & automatikk får egne knapper for «Oppdater alt nå» og «Sjekk renten nå».
+- Beholder hele v4.1: Norges Bank-valutakurser, styringsrentevakt, redaksjonspanel og beskyttet cron-endpoint.
+- Normaliserer **SEK, DKK og CHF** fra Norges Banks 100-enhetsnotering til vanlig kurs per 1 valutaenhet før verdien lagres i `markets`.
+- Viser dermed for eksempel `SEK/NOK 0,9604` i stedet for `96,04`, og `DKK/NOK 1,4481` i stedet for `144,81`.
+- Valutaendringen i prosent påvirkes ikke av normaliseringen.
+- SEK/NOK og DKK/NOK vises med fire desimaler, lik de øvrige valutaparene.
 
-## Viktig om automatisk frekvens
+## Test etter deploy
 
-Koden er klar for automatiske sjekker, men høyfrekvent tidsplan er ikke lagt i `vercel.json` i denne pakken. Det er med vilje, slik at et Hobby-prosjekt ikke blokkeres av en cron-plan som kjører oftere enn abonnementet tillater. Neste steg er å opprette `CRON_SECRET`, teste endpointet og velge scheduler.
+1. Logg inn på `/redaksjon`.
+2. Åpne **Kilder & automatikk**.
+3. Trykk **Oppdater alt nå**.
+4. Åpne forsiden og kontroller at SEK/NOK, DKK/NOK og CHF/NOK vises per 1 valutaenhet.
 
-## Testflyt
-
-1. Deploy denne versjonen.
-2. Logg inn på `/redaksjon`.
-3. Åpne **Kilder & automatikk**.
-4. Trykk **Sjekk renten nå**.
-5. Første kjøring skal registrere dagens styringsrente uten å opprette breaking-utkast.
-6. Kontroller at `Styringsrente` vises på forsiden og i redaksjonspanelet.
-7. Opprett deretter `CRON_SECRET` før automatisk scheduler aktiveres.
+Ingen databaseendring er nødvendig. Neste synk overskriver de eksisterende markedsverdiene med normaliserte verdier.
