@@ -7,6 +7,7 @@ import { expectedSessionValue, safeEqual, SESSION_COOKIE } from '../../lib/auth'
 import { approveDraft, archiveArticle, rejectDraft, setPinned } from '../../lib/admin-db';
 import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
 import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
+import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -61,5 +62,11 @@ export async function syncPolicyRateAction() {
   await requireAdmin();
   await syncNorgesBankPolicyRate();
   revalidatePath('/');
+  revalidatePath('/redaksjon');
+}
+
+export async function syncEuronextOsloAction() {
+  await requireAdmin();
+  await syncEuronextOsloNews();
   revalidatePath('/redaksjon');
 }

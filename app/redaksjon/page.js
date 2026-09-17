@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getAdminData } from '../../lib/admin-db';
 import { clockTime, fullDate, marketValue } from '../../lib/format';
-import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
+import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,7 +52,12 @@ function Feed({ items }) {
   return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Tid</th><th>Melding</th><th>Seksjon</th><th>Status</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}><td>{clockTime(i.tidspunkt)}</td><td><b>{i.tekst}</b></td><td>{i.seksjon || '—'}</td><td>{i.status}</td></tr>)}</tbody></table></div>;
 }
 
-function Sources({ items, policyRate }) {
+function RawItems({ items }) {
+  if (!items.length) return <Empty>Ingen råmeldinger er hentet ennå.</Empty>;
+  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Tid</th><th>Melding</th><th>Kilde</th><th>Status</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}><td>{i.publisert ? fullDate(i.publisert) : '—'}</td><td><a href={i.url || '#'} target="_blank" rel="noreferrer"><b>{i.tittel}</b></a></td><td>{i.kilde_navn || '—'}</td><td>{i.behandlet ? 'Behandlet' : 'Venter scoring'}</td></tr>)}</tbody></table></div>;
+}
+
+function Sources({ items, policyRate, rawItems }) {
   return <>
     <div className="sourceToolbar">
       <div><b>Norges Bank – markeder og styringsrente</b><small>Henter offisielle valutakurser og overvåker styringsrenten. Ved en faktisk renteendring lages et utkast med score 100 i redaksjonskøen – ingenting autopubliseres ennå.</small></div>
@@ -62,7 +67,13 @@ function Sources({ items, policyRate }) {
       <div><b>Styringsrente</b><small>{policyRate ? `Sist registrert: ${marketValue('NOKPOLICY', policyRate.verdi)} · oppdatert ${fullDate(policyRate.oppdatert)}` : 'Ikke registrert ennå. Første sjekk oppretter bare referanseverdien.'}</small></div>
       <form action={syncPolicyRateAction}><button className="secondary">Sjekk renten nå</button></form>
     </div>
-    {!items.length ? <Empty>Ingen kilder er registrert ennå. Trykk «Oppdater alt nå» for å koble til Norges Bank.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Kilde</th><th>Type</th><th>Intervall</th><th>Status</th><th>Sist hentet</th></tr></thead><tbody>{items.map((s) => <tr key={s.id}><td><b>{s.navn}</b><small>{s.url}</small></td><td>{s.type}</td><td>{s.intervall_min} min</td><td>{s.aktiv ? 'Aktiv' : 'Av'}</td><td>{s.sist_hentet ? fullDate(s.sist_hentet) : 'Aldri'}</td></tr>)}</tbody></table></div>}
+    <div className="sourceToolbar">
+      <div><b>Oslo Børs – selskapsmeldinger</b><small>Testadapter mot Euronexts offentlige Oslo Børs-side. Henter de nyeste meldingene til raw_items for senere AI-scoring. Kjøring er manuell inntil vi har verifisert stabilitet og vilkår.</small></div>
+      <form action={syncEuronextOsloAction}><button>Hent børsmeldinger nå</button></form>
+    </div>
+    {!items.length ? <Empty>Ingen kilder er registrert ennå.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Kilde</th><th>Type</th><th>Intervall</th><th>Status</th><th>Sist hentet</th></tr></thead><tbody>{items.map((s) => <tr key={s.id}><td><b>{s.navn}</b><small>{s.url}</small></td><td>{s.type}</td><td>{s.intervall_min} min</td><td>{s.aktiv ? 'Aktiv' : 'Av'}</td><td>{s.sist_hentet ? fullDate(s.sist_hentet) : 'Aldri'}</td></tr>)}</tbody></table></div>}
+    <div className="sectionKicker" style={{ marginTop: 24, marginBottom: 10 }}>Siste råmeldinger</div>
+    <RawItems items={rawItems}/>
   </>;
 }
 
@@ -86,14 +97,14 @@ export default async function RedaksjonPage({ searchParams }) {
           {active === 'forside' && <FrontPage items={data.liveOrder}/>} 
           {active === 'publisert' && <Published items={data.published}/>} 
           {active === 'siste' && <Feed items={data.feed}/>} 
-          {active === 'kilder' && <Sources items={data.sources} policyRate={data.policyRate}/>} 
+          {active === 'kilder' && <Sources items={data.sources} policyRate={data.policyRate} rawItems={data.rawItems}/>} 
         </section>
         <aside className="adminAside">
           <div className="adminStat"><span>Utkast i kø</span><strong>{data.queue.length}</strong></div>
           <div className="adminStat"><span>Publisert</span><strong>{data.published.length}</strong></div>
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
-          <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Automatisk høyfrekvent kjøring aktiveres separat når CRON_SECRET og tidsplan er på plass.</p></div>
+          <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
       </div>
     </main>
