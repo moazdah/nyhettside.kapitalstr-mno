@@ -74,6 +74,11 @@ export async function syncEuronextOsloAction() {
 
 export async function scoreRawItemsAction() {
   await requireAdmin();
-  await scorePendingRawItems(20);
-  revalidatePath('/redaksjon');
+  try {
+    await scorePendingRawItems(20);
+    revalidatePath('/redaksjon');
+  } catch (error) {
+    console.error('Kapitalstrøm AI-scoring failed:', error);
+    redirect('/api/ai-status');
+  }
 }
