@@ -9,6 +9,8 @@ import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
 import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
 import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
 import { scorePendingRawItems } from '../../lib/ai/score-raw-items';
+import { runNewsRadar } from '../../lib/radar/news-radar';
+import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -79,6 +81,28 @@ export async function scoreRawItemsAction() {
     revalidatePath('/redaksjon');
   } catch (error) {
     console.error('Kapitalstrøm AI-scoring failed:', error);
+    redirect('/api/ai-status');
+  }
+}
+
+export async function runNewsRadarAction() {
+  await requireAdmin();
+  try {
+    await runNewsRadar();
+    revalidatePath('/redaksjon');
+  } catch (error) {
+    console.error('Kapitalstrøm news radar failed:', error);
+    throw error;
+  }
+}
+
+export async function scoreRadarItemsAction() {
+  await requireAdmin();
+  try {
+    await scorePendingRadarItems(30);
+    revalidatePath('/redaksjon');
+  } catch (error) {
+    console.error('Kapitalstrøm radar scoring failed:', error);
     redirect('/api/ai-status');
   }
 }
