@@ -18,7 +18,7 @@ export default function RadarActionControl({ mode }) {
 
     setMessage(isRun
       ? 'Henter, filtrerer og lagrer nye radartreff. Dette kan ta litt tid.'
-      : 'DeepSeek vurderer radartreffene. Vent til jobben er ferdig.');
+      : 'Filtrerer lokalt først, deretter vurderer DeepSeek bare de sterkeste unike hendelsene.');
 
     startTransition(async () => {
       try {
@@ -42,11 +42,15 @@ export default function RadarActionControl({ mode }) {
           } else {
             const requested = Number(result?.requested || 0);
             const scored = Number(result?.scored || 0);
+            const triage = result?.triage || {};
             const errors = Array.isArray(result?.errors) ? result.errors : [];
             const warning = errors.length
               ? ` · ${errors.length} delbatch feilet: ${errors[0]}`
               : '';
-            setMessage(`Ferdig. ${scored} av ${requested} treff ble vurdert${warning}.`);
+            const funnel = triage.scanned != null
+              ? `Lokal trakt: ${Number(triage.scanned || 0)} råtreff → ${Number(triage.clusters || 0)} unike hendelser → ${Number(triage.candidates || 0)} AI-kandidater. `
+              : '';
+            setMessage(`${funnel}AI vurderte ${scored} av ${requested}${warning}.`);
           }
         }
 
