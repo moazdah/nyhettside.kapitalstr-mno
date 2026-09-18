@@ -39,15 +39,16 @@ function Queue({ items }) {
 }
 
 function NewsRadar({ items }) {
-  const waiting = items.filter((i) => i.ai_score == null).length;
-  const candidates = items.filter((i) => Number(i.ai_score) >= 60).length;
+  const radarModelTag = 'deepseek-flash/radar-v2';
+  const waiting = items.filter((i) => i.ai_score == null || i.ai_model !== radarModelTag).length;
+  const candidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60).length;
   return <>
     <div className="sourceToolbar">
       <div><b>Nyhetsradar – discovery</b><small>Henter overskrifter og metadata fra åpne RSS-feeder og GDELTs globale nyhetsindeks. Andre medier brukes som tipsradar, ikke som tekstgrunnlag. Hvert nytt treff får en kildejournal.</small></div>
       <form action={runNewsRadarAction}><button>Kjør radar nå</button></form>
     </div>
     <div className="sourceToolbar">
-      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer nyhetsverdi, seksjon, hendelsestype og neste kildegrep. Den skriver ingen artikkel. {waiting} av de viste treffene venter vurdering · {candidates} scorer 60+.</small></div>
+      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer nyhetsverdi, seksjon, hendelsestype og neste kildegrep med streng kilde-/faktadisiplin. Den skriver ingen artikkel. {waiting} av de viste treffene trenger ny v2-vurdering · {candidates} scorer 60+ etter nye regler.</small></div>
       <form action={scoreRadarItemsAction}><button>Vurder nye treff</button></form>
     </div>
     {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
