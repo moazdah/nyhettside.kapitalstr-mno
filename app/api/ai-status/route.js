@@ -1,38 +1,52 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { expectedSessionValue, safeEqual, SESSION_COOKIE } from '../../../lib/auth';
 import { db } from '../../../lib/db';
 import { ensureRawItemScoringSchema } from '../../../lib/ai/score-raw-items';
 
 export const dynamic = 'force-dynamic';
 
-async function isAdmin() {
-  const store = await cookies();
-  const actual = store.get(SESSION_COOKIE)?.value || '';
-  const expected = await expectedSessionValue();
-  return safeEqual(actual, expected);
+function deploymentMeta() {
+  return {
+    vercel_env: process.env.VERCEL_ENV || null,
+    git_commit: process.env.VERCEL_GIT_COMMIT_SHA
+      ? process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7)
+      : null,
+    deepseek_key_present: Boolean(process.env.DEEPSEEK_API_KEY),
+  };
 }
 
 export async function GET() {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ ok: false, step: 'auth', message: 'Logg inn i redaksjonspanelet først.' }, { status: 401 });
-  }
-
   const apiKey = process.env.DEEPSEEK_API_KEY;
+
+  // TEMPORARY DEVELOPMENT DIAGNOSTIC:
+  // Redaksjonspanelet is intentionally open while the site is not live.
+  // Never return the secret value itself.
   if (!apiKey) {
-    return NextResponse.json({ ok: false, step: 'env', message: 'DEEPSEEK_API_KEY mangler i denne deploymenten.' }, { status: 500 });
+    return NextResponse.json({
+      ok: false,
+      step: 'env',
+      message: 'DEEPSEEK_API_KEY mangler i denne deploymenten.',
+      ...deploymentMeta(),
+    }, {
+      status: 500,
+      headers: { 'Cache-Control': 'no-store' },
+    });
   }
 
   try {
     const sql = db();
     await ensureRawItemScoringSchema(sql);
-    const [row] = await sql`SELECT COUNT(*)::int AS pending FROM raw_items WHERE behandlet = false`;
+    const [row] = await sql`
+      SELECT COUNT(*)::int AS pending
+      FROM raw_items
+      WHERE behandlet = false
+    `;
 
     const balanceResponse = await fetch('https://api.deepseek.com/user/balance', {
       cache: 'no-store',
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     const balanceBody = await balanceResponse.json().catch(() => null);
+
     if (!balanceResponse.ok) {
       return NextResponse.json({
         ok: false,
@@ -40,7 +54,8 @@ export async function GET() {
         status: balanceResponse.status,
         message: balanceBody?.error?.message || `DeepSeek svarte HTTP ${balanceResponse.status}`,
         pending: row?.pending ?? null,
-      }, { status: 200 });
+        ...deploymentMeta(),
+      }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     }
 
     if (balanceBody?.is_available === false) {
@@ -50,7 +65,8 @@ export async function GET() {
         status: 402,
         message: 'DeepSeek-kontoen har ikke tilgjengelig API-saldo.',
         pending: row?.pending ?? null,
-      }, { status: 200 });
+        ...deploymentMeta(),
+      }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     }
 
     const testResponse = await fetch('https://api.deepseek.com/chat/completions', {
@@ -72,6 +88,7 @@ export async function GET() {
       }),
     });
     const testBody = await testResponse.json().catch(() => null);
+
     if (!testResponse.ok) {
       return NextResponse.json({
         ok: false,
@@ -79,7 +96,8 @@ export async function GET() {
         status: testResponse.status,
         message: testBody?.error?.message || `DeepSeek svarte HTTP ${testResponse.status}`,
         pending: row?.pending ?? null,
-      }, { status: 200 });
+        ...deploymentMeta(),
+      }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     }
 
     return NextResponse.json({
@@ -89,12 +107,14 @@ export async function GET() {
       balance_available: balanceBody?.is_available !== false,
       pending: row?.pending ?? 0,
       model: testBody?.model || 'deepseek-flash',
-    });
+      ...deploymentMeta(),
+    }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return NextResponse.json({
       ok: false,
       step: 'server',
       message: error?.message || 'Ukjent serverfeil',
-    }, { status: 200 });
+      ...deploymentMeta(),
+    }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
   }
 }
