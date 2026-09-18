@@ -10,14 +10,14 @@ const STAGE_LABELS = {
   scoring: 'AI-rangerer kandidater',
   selection: 'Velger toppsakene',
   research: 'Bygger kilde- og faktapakker',
-  drafting: 'Skriver private utkast',
+  drafting: 'Skriver ferdige artikler',
   recovery: 'Prøver utsatt jobb på nytt',
   done: 'Ferdig',
 };
 
 function queueSummary(state) {
   if (!state) return '';
-  return `Lokal filter: ${state.triagePending ? 'venter' : 'ferdig'} · AI-kandidater: ${state.scoring} · AI-retry: ${state.deferredScoring ?? 0} · Researchpool: ${state.selectionPending ? 'venter' : (state.selected ?? 0)} · Research igjen: ${state.research} (+${state.deferredResearch ?? 0} senere) · Utkast: ${state.draftsCreated ?? 0}/${state.articleLimit ?? 3} · klare nå: ${state.drafting}`;
+  return `Lokal filter: ${state.triagePending ? 'venter' : 'ferdig'} · AI-kandidater: ${state.scoring} · AI-retry: ${state.deferredScoring ?? 0} · Researchpool: ${state.selectionPending ? 'venter' : (state.selected ?? 0)} · Research igjen: ${state.research} (+${state.deferredResearch ?? 0} senere) · Skrevet: ${state.draftsCreated ?? 0}/${state.articleLimit ?? 3} · klare nå: ${state.drafting}`;
 }
 
 export default function AutopilotControl() {
@@ -25,7 +25,7 @@ export default function AutopilotControl() {
   const stopRef = useRef(false);
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState('');
-  const [message, setMessage] = useState('Klar. Autopiloten publiserer ingenting; ferdige saker havner privat i utkastskøen.');
+  const [message, setMessage] = useState('Klar. Den manuelle testkjøringen lager ferdige utkast. Den planlagte timekjøringen følger publiseringsbryteren over.');
   const [state, setState] = useState(null);
   const [processed, setProcessed] = useState(0);
   const [errors, setErrors] = useState([]);
@@ -91,7 +91,7 @@ export default function AutopilotControl() {
         } else if (result.stage === 'selection') {
           const selected = Array.isArray(result.selected) ? result.selected : [];
           const titles = selected.slice(0, 6).map((x) => '#' + x.rank + ' ' + x.title).join(' · ');
-          setMessage(`Researchpool klar: ${selected.length} sterke hendelser undersøkes. Maks ${Number(result.articleLimit || 3)} av dem blir private utkast.${titles ? ' ' + titles : ''}`);
+          setMessage(`Researchpool klar: ${selected.length} sterke hendelser undersøkes. Maks ${Number(result.articleLimit || 3)} av dem blir ferdige artikler.${titles ? ' ' + titles : ''}`);
           stalled = 0;
         } else if (result.stage === 'recovery') {
           const detail = Array.isArray(result.details) ? result.details[0] : null;
@@ -146,7 +146,7 @@ export default function AutopilotControl() {
         <div>
           <b>Autopilot · steg 1</b>
           <small>
-            Ett klikk: discovery → lokal støyfiltrering og hendelsesklynger → maks ca. 45 AI-kandidater → researchpool på opptil 6 → de beste dokumenterte sakene blir maks 3 private utkast.
+            Ett klikk: discovery → lokal støyfiltrering og hendelsesklynger → maks ca. 45 AI-kandidater → researchpool på opptil 6 → de beste dokumenterte sakene blir maks 3 ferdige artikler. Automatisk publisering styres separat av bryteren over.
           </small>
         </div>
         <div className="autopilotActions">
