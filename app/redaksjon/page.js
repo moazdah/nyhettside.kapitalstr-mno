@@ -4,6 +4,7 @@ import { clockTime, fullDate, marketValue } from '../../lib/format';
 import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 import RadarActionControl from './RadarActionControl';
 import FactPackButton from './FactPackButton';
+import ArticleDraftButton from './ArticleDraftButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ function Queue({ items }) {
   if (!items.length) return <Empty>Ingen utkast i køen akkurat nå.</Empty>;
   return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Sak</th><th>Kilde</th><th>Tall</th><th>Tid</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}>
     <td><span className="scoreBadge">{a.ai_score ?? '—'}</span></td>
-    <td><b>{a.tittel}</b><small>{a.seksjon}{a.ai_begrunnelse ? ` · ${a.ai_begrunnelse}` : ''}</small></td>
+    <td><Link href={`/redaksjon/utkast/${a.id}`}><b>{a.tittel}</b></Link><small>{a.seksjon}{a.ai_begrunnelse ? ` · ${a.ai_begrunnelse}` : ''}</small></td>
     <td>{a.kilde_navn || (a.kilde_url ? 'Ekstern kilde' : '—')}</td>
     <td><span className={a.tall_validert ? 'validation ok' : 'validation warn'}>{a.tall_validert ? 'TALL VALIDERT' : 'IKKE VALIDERT'}</span></td>
     <td>{clockTime(a.created_at)}</td>
@@ -71,7 +72,12 @@ function NewsRadar({ items }) {
         {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v4' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
         {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
         {i.primary_source_name ? <small>Primærkilde: {i.primary_source_name}</small> : null}
-        {i.ai_model === radarModelTag && Number(i.ai_score) >= 60 ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/> : <small>Bygges bare for v2-score 60+</small>}
+        {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v4'
+          ? <ArticleDraftButton id={i.id}/>
+          : (i.ai_model === radarModelTag && Number(i.ai_score) >= 60
+              ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/>
+              : <small>Bygges bare for v2-score 60+</small>)}
+
       </td>
     </tr>)}</tbody></table></div>}
   </>;
