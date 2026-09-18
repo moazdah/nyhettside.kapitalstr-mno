@@ -68,7 +68,7 @@ function NewsRadar({ items }) {
         {i.fact_pack_status === 'needs_review' ? <span className="validation warn">TRENGER KONTROLL · {i.fact_confidence}/100</span> : null}
         {i.fact_pack_status === 'needs_source' ? <span className="validation warn">TRENGER KILDE</span> : null}
         {i.fact_pack_status === 'insufficient_source' ? <span className="validation warn">KILDE FOR TYNN</span> : null}
-        {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v3' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
+        {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v4' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
         {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
         {i.primary_source_name ? <small>Primærkilde: {i.primary_source_name}</small> : null}
         {i.ai_model === radarModelTag && Number(i.ai_score) >= 60 ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/> : <small>Bygges bare for v2-score 60+</small>}
