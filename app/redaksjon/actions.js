@@ -128,3 +128,18 @@ export async function generateArticleDraftAction(formData) {
   revalidatePath('/redaksjon');
   return result;
 }
+
+export async function approveFromDraftAction(formData) {
+  await requireAdmin();
+  await approveDraft(Number(formData.get('id')));
+  revalidatePath('/');
+  revalidatePath('/redaksjon');
+  redirect('/redaksjon?tab=publisert');
+}
+
+export async function rejectFromDraftAction(formData) {
+  await requireAdmin();
+  await rejectDraft(Number(formData.get('id')));
+  revalidatePath('/redaksjon');
+  redirect('/redaksjon?tab=ko');
+}
