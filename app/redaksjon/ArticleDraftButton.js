@@ -20,10 +20,13 @@ export default function ArticleDraftButton({ id }) {
         const result = await generateArticleDraftAction(formData);
 
         if (result?.ok && result?.articleId) {
+          const checkText = result.verificationStatus === 'passed'
+            ? `kontroll ${result.verificationConfidence || 0}/100`
+            : 'lagret med redaksjonell advarsel';
           setMessage(result.status === 'existing'
-            ? 'Utkastet finnes allerede. Åpner det …'
-            : `Utkast klart · faktasjekk ${result.verificationConfidence || 0}/100. Åpner …`);
-          router.push(`/redaksjon/utkast/${result.articleId}`);
+            ? 'Utkastet finnes allerede. Går til utkastskøen …'
+            : `Utkast lagret · ${checkText}. Går til utkastskøen …`);
+          router.push('/redaksjon?tab=ko');
           return;
         }
 
