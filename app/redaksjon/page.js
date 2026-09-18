@@ -53,8 +53,10 @@ function Queue({ items }) {
 }
 
 function NewsRadar({ items }) {
-  const radarModelTag = 'deepseek-flash/radar-v3';
-  const waiting = items.filter((i) => i.ai_score == null || i.ai_model !== radarModelTag).length;
+  const radarModelTag = 'deepseek-flash/radar-v4';
+  const waiting = items.filter((i) => i.local_triage_status === 'candidate' && (i.ai_score == null || i.ai_model !== radarModelTag)).length;
+  const localCandidates = items.filter((i) => i.local_triage_status === 'candidate').length;
+  const localFiltered = items.filter((i) => ['duplicate', 'noise', 'overflow'].includes(i.local_triage_status)).length;
   const autoCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 70).length;
   const watchCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60 && Number(i.ai_score) < 70).length;
   return <>
@@ -64,7 +66,7 @@ function NewsRadar({ items }) {
       <RadarActionControl mode="run"/>
     </div>
     <div className="sourceToolbar">
-      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer global nyhetsverdi, markedsbetydning, leserinteresse og tallanalyse. Autopiloten vurderer bare 70+ for timeutvalget og velger maks 3 unike hendelser. 60–69 overvåkes, men kan alltid lages manuelt. {waiting} trenger ny v3-vurdering · {autoCandidates} er 70+ · {watchCandidates} er 60–69.</small></div>
+      <div><b>Smart nyhetstrakt</b><small>Før AI brukes, fjernes åpenbar støy lokalt og like lenker samles til hendelser. Maks ca. 45 unike hendelser sendes til DeepSeek v4. {localCandidates} AI-kandidater vises nå · {localFiltered} er filtrert/duplikat/parkert · {waiting} venter AI · {autoCandidates} er 70+ · {watchCandidates} er 60–69.</small></div>
       <RadarActionControl mode="score"/>
     </div>
     {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th><th>Faktapakke / handling</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
@@ -73,11 +75,11 @@ function NewsRadar({ items }) {
           <span className="scoreBadge">{i.ai_score}</span>
           {i.ai_model === radarModelTag ? <small>Oppm. {i.attention_score ?? '—'} · Tall {i.numbers_score ?? '—'}</small> : null}
           {i.selection_rank ? <span className="validation ok">AUTOPILOT #{i.selection_rank}</span> : null}
-          {Number(i.event_cluster_size || 0) > 1 ? <small>{i.event_cluster_size} treff samlet i samme hendelse</small> : null}
+          {Number(i.local_cluster_size || i.event_cluster_size || 0) > 1 ? <small>{i.local_cluster_size || i.event_cluster_size} treff samlet i samme hendelse før AI</small> : null}
         </>}
       </td>
       <td>{i.published_at ? fullDate(i.published_at) : fullDate(i.discovered_at)}</td>
-      <td><a href={i.url} target="_blank" rel="noreferrer"><b>{i.title}</b></a>{i.ai_reason ? <small>{i.ai_section || '—'} · {i.ai_reason}</small> : (i.summary ? <small>{i.summary}</small> : null)}</td>
+      <td><a href={i.url} target="_blank" rel="noreferrer"><b>{i.title}</b></a>{i.ai_reason ? <small>{i.ai_section || '—'} · {i.ai_reason}</small> : (i.summary ? <small>{i.summary}</small> : null)}{i.local_triage_status ? <small>Lokal trakt: {i.local_triage_status}{i.local_priority != null ? ` · prioritet ${i.local_priority}` : ''}</small> : null}</td>
       <td>{i.source_domain || i.source_name}<small>{i.source_kind}</small></td>
       <td>{i.candidate_type || 'Ikke vurdert'}</td>
       <td>
@@ -96,12 +98,12 @@ function NewsRadar({ items }) {
         {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v7' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
         {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
         {i.primary_source_name ? <small>Kildegrunnlag: {i.primary_source_name}{i.source_role === 'trusted_secondary' ? ' · etablert nyhetskilde' : ' · offisiell/primær'}</small> : null}
-        {i.ai_score != null && !i.has_article ? <ManualStoryButton id={i.id}/> : null}
+        {!i.has_article ? <ManualStoryButton id={i.id}/> : null}
         {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v7'
           ? <ArticleDraftButton id={i.id}/>
           : (i.ai_model === radarModelTag && Number(i.ai_score) >= 60
               ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/>
-              : <small>Autopilot bruker 70+. Du kan fortsatt velge «Lag sak nå» manuelt.</small>)}
+              : <small>Autopiloten bruker bare de sterkeste kandidatene. Du kan fortsatt velge «Lag sak nå» manuelt.</small>)}
       </td>
     </tr>)}</tbody></table></div>}
   </>;
@@ -188,7 +190,7 @@ export default async function RedaksjonPage({ searchParams }) {
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
           <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Systemet foretrekker original/offisiell kilde, men én etablert nyhetskilde kan være nok for et utkast. Eksklusive opplysninger, råd og sitater krediteres tydelig.</p></div>
-          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten kan nå tømme hele radararbeidskøen i én kjøring: scoring → kilde/faktapakke → privat utkast. Ingenting autopubliseres i steg 1.</p></div>
+          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten filtrerer og dedupliserer lokalt før AI: råtreff → maks ca. 45 unike kandidater → AI-rangering → opptil 3 toppsaker → research → private utkast. Ingenting autopubliseres i steg 1.</p></div>
           <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
       </div>

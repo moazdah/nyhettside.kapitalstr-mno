@@ -10,6 +10,7 @@ import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-r
 import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
 import { scorePendingRawItems } from '../../lib/ai/score-raw-items';
 import { runNewsRadar } from '../../lib/radar/news-radar';
+import { prepareRadarCandidates } from '../../lib/radar/local-triage';
 import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
 import { buildFactPackForRadarItem } from '../../lib/research/fact-pack';
 import { generateArticleDraftFromRadar } from '../../lib/ai/write-article';
@@ -103,9 +104,10 @@ export async function runNewsRadarAction() {
 export async function scoreRadarItemsAction() {
   await requireAdmin();
   try {
+    const triage = await prepareRadarCandidates();
     const result = await scorePendingRadarItems(30);
     revalidatePath('/redaksjon');
-    return { ok: true, ...result };
+    return { ok: true, triage, ...result };
   } catch (error) {
     console.error('Kapitalstrøm radar scoring failed:', error);
     return {
