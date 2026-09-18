@@ -7,6 +7,7 @@ import { runAutopilotStepAction } from './actions';
 const STAGE_LABELS = {
   discovery: 'Henter nye saker',
   scoring: 'Scorer radaren',
+  selection: 'Velger toppsakene',
   research: 'Bygger kilde- og faktapakker',
   drafting: 'Skriver private utkast',
   done: 'Ferdig',
@@ -14,7 +15,7 @@ const STAGE_LABELS = {
 
 function queueSummary(state) {
   if (!state) return '';
-  return `Scoring: ${state.scoring} · Kilder/fakta: ${state.research} · Utkast: ${state.drafting}`;
+  return `Scoring: ${state.scoring} · Utvalg: ${state.selectionPending ? 'venter' : (state.selected ?? 0) + ' valgt'} · Kilder/fakta: ${state.research} · Utkast: ${state.drafting}`;
 }
 
 export default function AutopilotControl() {
@@ -38,6 +39,7 @@ export default function AutopilotControl() {
     setMessage('Starter autopilot og henter nye radartreff …');
 
     let first = true;
+    let activeRunId = null;
     let totalProcessed = 0;
     let stalled = 0;
     let loops = 0;
@@ -46,8 +48,9 @@ export default function AutopilotControl() {
     try {
       while (!stopRef.current && loops < 160) {
         loops += 1;
-        const result = await runAutopilotStepAction({ discovery: first });
+        const result = await runAutopilotStepAction({ discovery: first, runId: activeRunId });
         first = false;
+        if (result?.runId) activeRunId = Number(result.runId);
 
         if (!result?.ok) {
           const newErrors = Array.isArray(result?.errors) ? result.errors : ['Ukjent autopilot-feil'];
@@ -73,6 +76,11 @@ export default function AutopilotControl() {
           const inserted = Number(result.discovery?.inserted || 0);
           const seen = Number(result.discovery?.seen || 0);
           setMessage(`Discovery ferdig: ${seen} treff sjekket, ${inserted} nye lagret. Fortsetter automatisk …`);
+          stalled = 0;
+        } else if (result.stage === 'selection') {
+          const selected = Array.isArray(result.selected) ? result.selected : [];
+          const titles = selected.map((x) => '#' + x.rank + ' ' + x.title).join(' · ');
+          setMessage(`Redaksjonelt utvalg ferdig: ${selected.length} unike saker valgt av maks 3.${titles ? ' ' + titles : ''}`);
           stalled = 0;
         } else {
           setMessage(`${STAGE_LABELS[result.stage] || 'Jobber'} · ${queueSummary(currentState)} · ${totalProcessed} arbeidssteg ferdig`);
@@ -117,7 +125,7 @@ export default function AutopilotControl() {
         <div>
           <b>Autopilot · steg 1</b>
           <small>
-            Ett klikk: discovery → scoring → kilde/faktapakke → privat artikkelutkast. Score under 60 går ikke videre.
+            Ett klikk: discovery → scoring → duplikater samles til hendelser → opptil 3 toppsaker velges → kilde/faktapakke → private utkast.
           </small>
         </div>
         <div className="autopilotActions">
