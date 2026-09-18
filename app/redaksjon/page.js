@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getAdminData } from '../../lib/admin-db';
 import { clockTime, fullDate, marketValue } from '../../lib/format';
-import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
+import { archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 import RadarActionControl from './RadarActionControl';
 import FactPackButton from './FactPackButton';
 import ArticleDraftButton from './ArticleDraftButton';
@@ -37,7 +37,7 @@ function Queue({ items }) {
     <td>{a.kilde_navn || (a.kilde_url ? 'Ekstern kilde' : '—')}</td>
     <td><span className={a.tall_validert ? 'validation ok' : 'validation warn'}>{a.tall_validert ? 'TALL VALIDERT' : 'IKKE VALIDERT'}</span></td>
     <td>{clockTime(a.created_at)}</td>
-    <td className="adminActions"><form action={approveAction}><input type="hidden" name="id" value={a.id}/><button>Godkjenn</button></form><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Avvis</button></form></td>
+    <td className="adminActions"><Link href={`/redaksjon/utkast/${a.id}`} className="secondaryLink">Åpne / rediger</Link><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Avvis</button></form></td>
   </tr>)}</tbody></table></div>;
 }
 
