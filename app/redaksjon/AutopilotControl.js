@@ -15,7 +15,7 @@ const STAGE_LABELS = {
 
 function queueSummary(state) {
   if (!state) return '';
-  return `Scoring: ${state.scoring} · Utvalg: ${state.selectionPending ? 'venter' : (state.selected ?? 0) + ' valgt'} · Kilder/fakta: ${state.research} · Utkast: ${state.drafting}`;
+  return `Scoring: ${state.scoring} · AI-retry senere: ${state.deferredScoring ?? 0} · Utvalg: ${state.selectionPending ? 'venter' : (state.selected ?? 0) + ' valgt'} · Kilder/fakta: ${state.research} · Utkast: ${state.drafting}`;
 }
 
 export default function AutopilotControl() {
@@ -42,6 +42,7 @@ export default function AutopilotControl() {
     let activeRunId = null;
     let totalProcessed = 0;
     let stalled = 0;
+    let lastProgressKey = '';
     let loops = 0;
     const collectedErrors = [];
 
@@ -72,6 +73,10 @@ export default function AutopilotControl() {
           setErrors([...collectedErrors]);
         }
 
+        const progressKey = currentState
+          ? [result.stage, currentState.scoring, currentState.deferredScoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.drafting].join(':')
+          : result.stage;
+
         if (result.stage === 'discovery') {
           const inserted = Number(result.discovery?.inserted || 0);
           const seen = Number(result.discovery?.seen || 0);
@@ -84,11 +89,15 @@ export default function AutopilotControl() {
           stalled = 0;
         } else {
           setMessage(`${STAGE_LABELS[result.stage] || 'Jobber'} · ${queueSummary(currentState)} · ${totalProcessed} arbeidssteg ferdig`);
-          stalled = amount > 0 ? 0 : stalled + 1;
+          stalled = progressKey === lastProgressKey ? stalled + 1 : 0;
         }
+        lastProgressKey = progressKey;
 
         if (currentState?.done || result.stage === 'done') {
-          setMessage(`Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · denne redaksjonsrunden er ferdig.`);
+          const deferred = Number(currentState?.deferredScoring || 0);
+          setMessage(deferred > 0
+            ? `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · ${deferred} AI-scoringer er utsatt til automatisk retry senere.`
+            : `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · denne redaksjonsrunden er ferdig.`);
           break;
         }
 
@@ -152,9 +161,15 @@ export default function AutopilotControl() {
         {errors.length ? <small className="autopilotWarning">{errors.length} del-feil logget · siste: {errors[errors.length - 1]}</small> : null}
       </div>
 
-      {state && !state.done ? (
-        <div className="autopilotProgress" aria-hidden="true">
-          <span style={{ width: `${Math.max(4, Math.min(96, 100 - Math.min(96, state.totalRemaining)))}%` }}/>
+      {state ? (
+        <div className="autopilotProgressWrap">
+          <div className="autopilotProgressMeta">
+            <span>Fremdrift</span>
+            <b>{Math.max(0, Math.min(100, Number(state.progressPct || 0)))}%</b>
+          </div>
+          <div className="autopilotProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.max(0, Math.min(100, Number(state.progressPct || 0)))}>
+            <span style={{ width: `${Math.max(0, Math.min(100, Number(state.progressPct || 0)))}%` }}/>
+          </div>
         </div>
       ) : null}
     </div>
