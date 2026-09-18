@@ -103,7 +103,7 @@ export default function AutopilotControl() {
         }
         lastProgressKey = progressKey;
 
-        if (currentState?.done || result.stage === 'done') {
+        if (result.stage === 'done') {
           const deferred = Number(currentState?.deferredScoring || 0)
             + Number(currentState?.deferredResearch || 0)
             + Number(currentState?.deferredDrafting || 0);
