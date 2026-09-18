@@ -66,7 +66,7 @@ function NewsRadar({ items }) {
       <RadarActionControl mode="run"/>
     </div>
     <div className="sourceToolbar">
-      <div><b>Smart nyhetstrakt</b><small>Før AI brukes, fjernes åpenbar støy lokalt og like lenker samles til hendelser. Maks ca. 45 unike hendelser sendes til DeepSeek v4. {localCandidates} AI-kandidater vises nå · {localFiltered} er filtrert/duplikat/parkert · {waiting} venter AI · {autoCandidates} er 70+ · {watchCandidates} er 60–69.</small></div>
+      <div><b>Smart nyhetstrakt</b><small>Før AI brukes, fjernes åpenbar støy lokalt og like lenker samles til hendelser. Maks ca. 45 unike hendelser sendes til DeepSeek v4. Autopiloten undersøker opptil 6 sterke hendelser og lager maks 3 utkast. {localCandidates} AI-kandidater vises nå · {localFiltered} er filtrert/duplikat/parkert · {waiting} venter AI · {autoCandidates} er 70+ · {watchCandidates} er 60–69.</small></div>
       <RadarActionControl mode="score"/>
     </div>
     {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th><th>Faktapakke / handling</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
@@ -74,7 +74,7 @@ function NewsRadar({ items }) {
         {i.ai_score == null ? '—' : <>
           <span className="scoreBadge">{i.ai_score}</span>
           {i.ai_model === radarModelTag ? <small>Oppm. {i.attention_score ?? '—'} · Tall {i.numbers_score ?? '—'}</small> : null}
-          {i.selection_rank ? <span className="validation ok">AUTOPILOT #{i.selection_rank}</span> : null}
+          {i.selection_rank ? <span className="validation ok">RESEARCH #{i.selection_rank}</span> : null}
           {Number(i.local_cluster_size || i.event_cluster_size || 0) > 1 ? <small>{i.local_cluster_size || i.event_cluster_size} treff samlet i samme hendelse før AI</small> : null}
         </>}
       </td>
