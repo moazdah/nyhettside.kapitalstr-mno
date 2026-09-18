@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import ArticleProse from '../../ArticleProse';
+import AdminSubmitButton from '../AdminSubmitButton';
 
 function findLinkAt(text, start, end) {
   const regex = /\[([^\]]{1,180})\]\((https?:\/\/[^\s)]+)\)/g;
@@ -210,7 +211,7 @@ export default function DraftEditor({ article, action }) {
           </label>
         </div>
 
-        <button type="submit">Lagre endringer</button>
+        <AdminSubmitButton pendingText="Lagrer …">Lagre endringer</AdminSubmitButton>
         <small className="editorHelp">Lagring publiserer ikke saken.</small>
       </form>
 
