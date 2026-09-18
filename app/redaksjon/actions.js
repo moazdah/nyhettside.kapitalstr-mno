@@ -13,6 +13,7 @@ import { runNewsRadar } from '../../lib/radar/news-radar';
 import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
 import { buildFactPackForRadarItem } from '../../lib/research/fact-pack';
 import { generateArticleDraftFromRadar } from '../../lib/ai/write-article';
+import { runAutopilotStep } from '../../lib/autopilot/autopilot';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -188,4 +189,26 @@ export async function createManualDraftAction() {
   const article = await createManualDraft();
   revalidatePath('/redaksjon');
   redirect(`/redaksjon/utkast/${article.id}?created=1`);
+}
+
+
+export async function runAutopilotStepAction(options = {}) {
+  await requireAdmin();
+  try {
+    const result = await runAutopilotStep({
+      discovery: options?.discovery === true,
+    });
+    revalidatePath('/redaksjon');
+    return result;
+  } catch (error) {
+    console.error('Kapitalstrøm autopilot failed:', error);
+    return {
+      ok: false,
+      stage: 'error',
+      processed: 0,
+      requested: 0,
+      errors: [error?.message || 'Ukjent autopilot-feil'],
+      state: null,
+    };
+  }
 }
