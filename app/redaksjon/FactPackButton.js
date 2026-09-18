@@ -25,6 +25,8 @@ export default function FactPackButton({ id, currentStatus }) {
           setMessage(`Bygget, men trenger kontroll · kvalitet ${result.confidence || 0}/100`);
         } else if (result?.status === 'needs_source') {
           setMessage('Stoppet trygt: primærkilde må finnes før artikkelskriving.');
+        } else if (result?.status === 'insufficient_source') {
+          setMessage('Offisiell kilde funnet, men den er for tynn til et sikkert artikkelutkast.');
         } else {
           setMessage('Faktapakken er oppdatert.');
         }
