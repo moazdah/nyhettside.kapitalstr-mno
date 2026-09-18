@@ -17,7 +17,7 @@ const STAGE_LABELS = {
 
 function queueSummary(state) {
   if (!state) return '';
-  return `Lokal filter: ${state.triagePending ? 'venter' : 'ferdig'} · AI-kandidater: ${state.scoring} · AI-retry: ${state.deferredScoring ?? 0} · Utvalg: ${state.selectionPending ? 'venter' : (state.selected ?? 0) + ' valgt'} · Research: ${state.research} (+${state.deferredResearch ?? 0} senere) · Utkast: ${state.drafting} (+${state.deferredDrafting ?? 0} senere)`;
+  return `Lokal filter: ${state.triagePending ? 'venter' : 'ferdig'} · AI-kandidater: ${state.scoring} · AI-retry: ${state.deferredScoring ?? 0} · Researchpool: ${state.selectionPending ? 'venter' : (state.selected ?? 0)} · Research igjen: ${state.research} (+${state.deferredResearch ?? 0} senere) · Utkast: ${state.draftsCreated ?? 0}/${state.articleLimit ?? 3} · klare nå: ${state.drafting}`;
 }
 
 export default function AutopilotControl() {
@@ -76,7 +76,7 @@ export default function AutopilotControl() {
         }
 
         const progressKey = currentState
-          ? [result.stage, currentState.triagePending, currentState.scoring, currentState.deferredScoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.deferredResearch, currentState.drafting, currentState.deferredDrafting].join(':')
+          ? [result.stage, currentState.triagePending, currentState.scoring, currentState.deferredScoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.deferredResearch, currentState.draftsCreated, currentState.drafting, currentState.deferredDrafting].join(':')
           : result.stage;
 
         if (result.stage === 'discovery') {
@@ -90,8 +90,8 @@ export default function AutopilotControl() {
           stalled = 0;
         } else if (result.stage === 'selection') {
           const selected = Array.isArray(result.selected) ? result.selected : [];
-          const titles = selected.map((x) => '#' + x.rank + ' ' + x.title).join(' · ');
-          setMessage(`Redaksjonelt utvalg ferdig: ${selected.length} unike saker valgt av maks 3.${titles ? ' ' + titles : ''}`);
+          const titles = selected.slice(0, 6).map((x) => '#' + x.rank + ' ' + x.title).join(' · ');
+          setMessage(`Researchpool klar: ${selected.length} sterke hendelser undersøkes. Maks ${Number(result.articleLimit || 3)} av dem blir private utkast.${titles ? ' ' + titles : ''}`);
           stalled = 0;
         } else if (result.stage === 'recovery') {
           const detail = Array.isArray(result.details) ? result.details[0] : null;
@@ -103,7 +103,7 @@ export default function AutopilotControl() {
         }
         lastProgressKey = progressKey;
 
-        if (currentState?.done || result.stage === 'done') {
+        if (result.stage === 'done') {
           const deferred = Number(currentState?.deferredScoring || 0)
             + Number(currentState?.deferredResearch || 0)
             + Number(currentState?.deferredDrafting || 0);
@@ -146,7 +146,7 @@ export default function AutopilotControl() {
         <div>
           <b>Autopilot · steg 1</b>
           <small>
-            Ett klikk: discovery → gratis lokal støyfiltrering og hendelsesklynger → maks ca. 45 unike kandidater AI-rangeres → opptil 3 toppsaker → research → private utkast.
+            Ett klikk: discovery → lokal støyfiltrering og hendelsesklynger → maks ca. 45 AI-kandidater → researchpool på opptil 6 → de beste dokumenterte sakene blir maks 3 private utkast.
           </small>
         </div>
         <div className="autopilotActions">
