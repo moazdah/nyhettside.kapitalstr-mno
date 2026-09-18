@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { expectedSessionValue, safeEqual, SESSION_COOKIE } from '../../lib/auth';
-import { approveDraft, archiveArticle, rejectDraft, setPinned, updateDraftArticle } from '../../lib/admin-db';
+import { approveDraft, archiveArticle, rejectDraft, setPinned, updateDraftArticle, createManualDraft } from '../../lib/admin-db';
 import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
 import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
 import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
@@ -174,4 +174,12 @@ export async function regenerateDraftFromReviewAction(formData) {
   revalidatePath('/redaksjon');
   if (!result?.articleId) throw new Error('Kunne ikke regenerere utkastet.');
   redirect(`/redaksjon/utkast/${result.articleId}?regenerated=1`);
+}
+
+
+export async function createManualDraftAction() {
+  await requireAdmin();
+  const article = await createManualDraft();
+  revalidatePath('/redaksjon');
+  redirect(`/redaksjon/utkast/${article.id}?created=1`);
 }
