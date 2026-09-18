@@ -8,6 +8,7 @@ import {
   saveDraftEditAction,
 } from '../../actions';
 import DraftEditor from '../DraftEditor';
+import AdminSubmitButton from '../../AdminSubmitButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,17 +72,17 @@ export default async function DraftReviewPage({ params, searchParams }) {
               {article.radar_item_id ? (
                 <form action={regenerateDraftFromReviewAction}>
                   <input type="hidden" name="radar_id" value={article.radar_item_id}/>
-                  <button className="secondary">Lag nytt AI-utkast</button>
+                  <AdminSubmitButton className="secondary" pendingText="Lager nytt utkast …">Lag nytt AI-utkast</AdminSubmitButton>
                   <small className="regenerateWarning">Overskriver tittel, ingress og brødtekst i dette utkastet.</small>
                 </form>
               ) : null}
               <form action={approveFromDraftAction}>
                 <input type="hidden" name="id" value={article.id}/>
-                <button>Godkjenn og publiser</button>
+                <AdminSubmitButton pendingText="Publiserer …">Godkjenn og publiser</AdminSubmitButton>
               </form>
               <form action={rejectFromDraftAction}>
                 <input type="hidden" name="id" value={article.id}/>
-                <button className="secondary">Avvis</button>
+                <AdminSubmitButton className="secondary" pendingText="Avviser …">Avvis</AdminSubmitButton>
               </form>
             </div>
           </div>
