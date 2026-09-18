@@ -11,7 +11,7 @@ export default function FactPackButton({ id, currentStatus }) {
 
   function handleClick() {
     if (isPending) return;
-    setMessage('Leter etter primærkilde og bygger faktapakke …');
+    setMessage('Finner et godt kildegrunnlag og bygger faktapakke …');
 
     startTransition(async () => {
       try {
@@ -24,7 +24,7 @@ export default function FactPackButton({ id, currentStatus }) {
         } else if (result?.status === 'needs_review') {
           setMessage(`Bygget, men trenger kontroll · kvalitet ${result.confidence || 0}/100`);
         } else if (result?.status === 'needs_source') {
-          setMessage('Stoppet trygt: primærkilde må finnes før artikkelskriving.');
+          setMessage('Trenger et sterkere kildegrunnlag før artikkelskriving.');
         } else if (result?.status === 'insufficient_source') {
           setMessage('Offisiell kilde funnet, men den er for tynn til et sikkert artikkelutkast.');
         } else {
