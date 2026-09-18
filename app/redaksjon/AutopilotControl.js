@@ -6,7 +6,8 @@ import { runAutopilotStepAction } from './actions';
 
 const STAGE_LABELS = {
   discovery: 'Henter nye saker',
-  scoring: 'Scorer radaren',
+  triage: 'Filtrerer og samler hendelser',
+  scoring: 'AI-rangerer kandidater',
   selection: 'Velger toppsakene',
   research: 'Bygger kilde- og faktapakker',
   drafting: 'Skriver private utkast',
@@ -15,7 +16,7 @@ const STAGE_LABELS = {
 
 function queueSummary(state) {
   if (!state) return '';
-  return `Scoring: ${state.scoring} · AI-retry senere: ${state.deferredScoring ?? 0} · Utvalg: ${state.selectionPending ? 'venter' : (state.selected ?? 0) + ' valgt'} · Kilder/fakta: ${state.research} · Utkast: ${state.drafting}`;
+  return `Lokal filter: ${state.triagePending ? 'venter' : 'ferdig'} · AI-kandidater: ${state.scoring} · AI-retry: ${state.deferredScoring ?? 0} · Utvalg: ${state.selectionPending ? 'venter' : (state.selected ?? 0) + ' valgt'} · Research: ${state.research} (+${state.deferredResearch ?? 0} senere) · Utkast: ${state.drafting} (+${state.deferredDrafting ?? 0} senere)`;
 }
 
 export default function AutopilotControl() {
@@ -74,13 +75,17 @@ export default function AutopilotControl() {
         }
 
         const progressKey = currentState
-          ? [result.stage, currentState.scoring, currentState.deferredScoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.drafting].join(':')
+          ? [result.stage, currentState.triagePending, currentState.scoring, currentState.deferredScoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.deferredResearch, currentState.drafting, currentState.deferredDrafting].join(':')
           : result.stage;
 
         if (result.stage === 'discovery') {
           const inserted = Number(result.discovery?.inserted || 0);
           const seen = Number(result.discovery?.seen || 0);
-          setMessage(`Discovery ferdig: ${seen} treff sjekket, ${inserted} nye lagret. Fortsetter automatisk …`);
+          setMessage(`Discovery ferdig: ${seen} treff sjekket, ${inserted} nye lagret. Lokal filtrering starter …`);
+          stalled = 0;
+        } else if (result.stage === 'triage') {
+          const t = result.triage || {};
+          setMessage(`Lokal trakt ferdig: ${Number(t.scanned || 0)} råtreff → ${Number(t.relevant || 0)} finansrelevante → ${Number(t.clusters || 0)} unike hendelser → ${Number(t.candidates || 0)} sendt videre til AI. ${Number(t.duplicates || 0)} duplikater og ${Number(t.noise || 0)} støytreff ble stoppet før AI.`);
           stalled = 0;
         } else if (result.stage === 'selection') {
           const selected = Array.isArray(result.selected) ? result.selected : [];
@@ -94,9 +99,11 @@ export default function AutopilotControl() {
         lastProgressKey = progressKey;
 
         if (currentState?.done || result.stage === 'done') {
-          const deferred = Number(currentState?.deferredScoring || 0);
+          const deferred = Number(currentState?.deferredScoring || 0)
+            + Number(currentState?.deferredResearch || 0)
+            + Number(currentState?.deferredDrafting || 0);
           setMessage(deferred > 0
-            ? `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · ${deferred} AI-scoringer er utsatt til automatisk retry senere.`
+            ? `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · ${deferred} deljobber er utsatt til automatisk retry senere.`
             : `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · denne redaksjonsrunden er ferdig.`);
           break;
         }
@@ -134,7 +141,7 @@ export default function AutopilotControl() {
         <div>
           <b>Autopilot · steg 1</b>
           <small>
-            Ett klikk: discovery → scoring → duplikater samles til hendelser → opptil 3 toppsaker velges → kilde/faktapakke → private utkast.
+            Ett klikk: discovery → gratis lokal støyfiltrering og hendelsesklynger → maks ca. 45 unike kandidater AI-rangeres → opptil 3 toppsaker → research → private utkast.
           </small>
         </div>
         <div className="autopilotActions">
