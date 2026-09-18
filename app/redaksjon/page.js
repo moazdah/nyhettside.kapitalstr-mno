@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { getAdminData } from '../../lib/admin-db';
 import { clockTime, fullDate, marketValue } from '../../lib/format';
-import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, runNewsRadarAction, scoreRadarItemsAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
+import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
+import RadarActionControl from './RadarActionControl';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,11 +46,11 @@ function NewsRadar({ items }) {
   return <>
     <div className="sourceToolbar">
       <div><b>Nyhetsradar – discovery</b><small>Henter overskrifter og metadata fra åpne RSS-feeder og GDELTs globale nyhetsindeks. Andre medier brukes som tipsradar, ikke som tekstgrunnlag. Hvert nytt treff får en kildejournal.</small></div>
-      <form action={runNewsRadarAction}><button>Kjør radar nå</button></form>
+      <RadarActionControl mode="run"/>
     </div>
     <div className="sourceToolbar">
       <div><b>AI-triage av radaren</b><small>DeepSeek vurderer nyhetsverdi, seksjon, hendelsestype og neste kildegrep med streng kilde-/faktadisiplin. Den skriver ingen artikkel. {waiting} av de viste treffene trenger ny v2-vurdering · {candidates} scorer 60+ etter nye regler.</small></div>
-      <form action={scoreRadarItemsAction}><button>Vurder nye treff</button></form>
+      <RadarActionControl mode="score"/>
     </div>
     {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
       <td>{i.ai_score == null ? '—' : <span className="scoreBadge">{i.ai_score}</span>}</td>
