@@ -26,7 +26,12 @@ export default async function ArticlePage({ params }) {
             <div><b>Av {article.forfatter || 'Kapitalstrøm'}</b><br/><span>Publisert {fullDate(article.publisert_at || article.created_at)}</span></div>
             <div><button>Del</button><button>Lagre</button></div>
           </div>
-          <figure><div className="photoPlaceholder articlePhoto"><span>FOTO 16:9 — bildeplassholder</span></div><figcaption>{article.bilde_kreditt || 'Bilde kobles til i neste fase.'}</figcaption></figure>
+          <figure>
+            {article.bilde_url
+              ? <img src={article.bilde_url} alt="" className="articlePhoto" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}/>
+              : <div className="photoPlaceholder articlePhoto"><span>FOTO 16:9 — bildeplassholder</span></div>}
+            <figcaption>{article.bilde_kreditt || (article.bilde_url ? 'Bildekreditering mangler.' : 'Bilde kobles til i redaksjonen.')}</figcaption>
+          </figure>
           <div className="prose">
             {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
           </div>
