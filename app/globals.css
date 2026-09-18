@@ -27,3 +27,7 @@
 
 /* Radar manual editorial override */
 .radarManualStory{display:grid;gap:4px;margin-top:8px}.radarManualStory button{justify-self:start}.radarManualStory small{max-width:260px;color:var(--muted);line-height:1.35}
+
+
+/* AI editorial voice */
+.aiAssessment{margin:34px 0 4px;padding:22px 24px 24px;border-top:2px solid var(--navy);border-bottom:1px solid var(--line);background:#f3f5f6}.aiAssessmentLabel{font:600 11px 'IBM Plex Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);margin-bottom:10px}.prose .aiAssessment p{margin:0;font:500 18px/1.62 'Newsreader',serif;color:#1c252d}
