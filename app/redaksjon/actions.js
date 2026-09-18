@@ -192,12 +192,10 @@ export async function createManualDraftAction() {
 export async function runAutopilotStepAction(options = {}) {
   await requireAdmin();
   try {
-    const result = await runAutopilotStep({
+    return await runAutopilotStep({
       discovery: options?.discovery === true,
       runId: options?.runId ? Number(options.runId) : null,
     });
-    revalidatePath('/redaksjon');
-    return result;
   } catch (error) {
     console.error('Kapitalstrøm autopilot failed:', error);
     return {
