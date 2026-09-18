@@ -66,6 +66,7 @@ export default async function DraftReviewPage({ params, searchParams }) {
                 <form action={regenerateDraftFromReviewAction}>
                   <input type="hidden" name="radar_id" value={article.radar_item_id}/>
                   <button className="secondary">Lag nytt AI-utkast</button>
+                  <small style={{ display: 'block', maxWidth: 180, marginTop: 5 }}>Overskriver tittel, ingress og brødtekst i dette utkastet.</small>
                 </form>
               ) : null}
               <form action={approveFromDraftAction}>
