@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getArticleData } from '../../../lib/db';
 import { fullDate, marketDelta, marketValue } from '../../../lib/format';
 import { Header, LatestNews } from '../../components';
+import ArticleProse from '../../ArticleProse';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +11,6 @@ export default async function ArticlePage({ params }) {
   const { slug } = await params;
   const { article, feed, markets, related } = await getArticleData(slug);
   if (!article) notFound();
-
-  const paragraphs = String(article.brodtekst || '').split(/\n\s*\n/).filter(Boolean);
 
   return (
     <>
@@ -32,9 +31,7 @@ export default async function ArticlePage({ params }) {
               : <div className="photoPlaceholder articlePhoto"><span>FOTO 16:9 — bildeplassholder</span></div>}
             <figcaption>{article.bilde_kreditt || (article.bilde_url ? 'Bildekreditering mangler.' : 'Bilde kobles til i redaksjonen.')}</figcaption>
           </figure>
-          <div className="prose">
-            {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-          </div>
+          <ArticleProse body={article.brodtekst}/>
         </article>
         <aside className="articleSidebar">
           <div className="sectionKicker">Siste nytt <span className="live">● LIVE</span></div>
