@@ -47,7 +47,7 @@ export default async function DraftReviewPage({ params }) {
             <div>
               <b>Automatisk faktakontroll</b>
               <small>
-                {article.tall_validert ? 'Tall validert' : 'Tall ikke validert'} · AI-kontroll {article.verification_confidence ?? '—'}/100 · faktapakke {article.fact_pack_version || '—'}.
+                {article.tall_validert ? 'Tallkontroll bestått' : 'Tall krever kontroll'} · {article.verification_status === 'passed' ? `AI-kontroll ${article.verification_confidence ?? '—'}/100` : 'grundig AI-kontroll venter'} · faktapakke {article.fact_pack_version || '—'}.
               </small>
               {article.valideringsnotat ? <small>{article.valideringsnotat}</small> : null}
             </div>
