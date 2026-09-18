@@ -47,8 +47,8 @@ export default function RadarActionControl({ mode }) {
 
   return (
     <div style={{ minWidth: 170, textAlign: 'right' }}>
-      <button type="button" onClick={handleClick} disabled={isPending} aria-busy={isPending}>
-        {isPending ? pendingLabel : label}
+      <button type="button" className="adminLoadingButton" onClick={handleClick} disabled={isPending} aria-busy={isPending}>
+        {isPending ? <><span className="adminSpinner" aria-hidden="true"/><span>{pendingLabel}</span></> : <span>{label}</span>}
       </button>
       {message ? (
         <small aria-live="polite" style={{ display: 'block', marginTop: 7, maxWidth: 240 }}>
