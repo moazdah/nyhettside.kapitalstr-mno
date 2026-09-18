@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { expectedSessionValue, safeEqual, SESSION_COOKIE } from '../../lib/auth';
-import { approveDraft, archiveArticle, rejectDraft, setPinned } from '../../lib/admin-db';
+import { approveDraft, archiveArticle, rejectDraft, setPinned, updateDraftArticle } from '../../lib/admin-db';
 import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
 import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
 import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
@@ -142,4 +142,36 @@ export async function rejectFromDraftAction(formData) {
   await rejectDraft(Number(formData.get('id')));
   revalidatePath('/redaksjon');
   redirect('/redaksjon?tab=ko');
+}
+
+
+export async function saveDraftEditAction(formData) {
+  await requireAdmin();
+  const id = Number(formData.get('id'));
+  if (!Number.isFinite(id)) throw new Error('Ugyldig utkast.');
+
+  await updateDraftArticle(id, {
+    tittel: formData.get('tittel'),
+    undertittel: formData.get('undertittel'),
+    brodtekst: formData.get('brodtekst'),
+    seksjon: formData.get('seksjon'),
+    forfatter: formData.get('forfatter'),
+    bilde_url: formData.get('bilde_url'),
+    bilde_kreditt: formData.get('bilde_kreditt'),
+  });
+
+  revalidatePath('/redaksjon');
+  revalidatePath(`/redaksjon/utkast/${id}`);
+  redirect(`/redaksjon/utkast/${id}?saved=1`);
+}
+
+export async function regenerateDraftFromReviewAction(formData) {
+  await requireAdmin();
+  const radarId = Number(formData.get('radar_id'));
+  if (!Number.isFinite(radarId)) throw new Error('Dette utkastet er ikke koblet til et radartreff.');
+
+  const result = await generateArticleDraftFromRadar(radarId);
+  revalidatePath('/redaksjon');
+  if (!result?.articleId) throw new Error('Kunne ikke regenerere utkastet.');
+  redirect(`/redaksjon/utkast/${result.articleId}?regenerated=1`);
 }
