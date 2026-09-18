@@ -11,6 +11,7 @@ import { syncEuronextOsloNews } from '../../lib/sources/euronext-oslo';
 import { scorePendingRawItems } from '../../lib/ai/score-raw-items';
 import { runNewsRadar } from '../../lib/radar/news-radar';
 import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
+import { buildFactPackForRadarItem } from '../../lib/research/fact-pack';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -107,4 +108,13 @@ export async function scoreRadarItemsAction() {
     console.error('Kapitalstrøm radar scoring failed:', error);
     redirect('/api/ai-status');
   }
+}
+
+export async function buildFactPackAction(formData) {
+  await requireAdmin();
+  const id = Number(formData.get('id'));
+  if (!Number.isFinite(id)) throw new Error('Ugyldig radartreff.');
+  const result = await buildFactPackForRadarItem(id);
+  revalidatePath('/redaksjon');
+  return { ok: true, ...result };
 }
