@@ -88,7 +88,7 @@ export default function AutopilotControl() {
         }
 
         if (currentState?.done || result.stage === 'done') {
-          setMessage(`Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · køen er tom.`);
+          setMessage(`Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · denne redaksjonsrunden er ferdig.`);
           break;
         }
 
