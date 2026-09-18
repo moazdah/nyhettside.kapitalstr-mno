@@ -6,6 +6,7 @@ import RadarActionControl from './RadarActionControl';
 import FactPackButton from './FactPackButton';
 import ArticleDraftButton from './ArticleDraftButton';
 import AdminSubmitButton from './AdminSubmitButton';
+import AutopilotControl from './AutopilotControl';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,7 @@ function NewsRadar({ items }) {
   const waiting = items.filter((i) => i.ai_score == null || i.ai_model !== radarModelTag).length;
   const candidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60).length;
   return <>
+    <AutopilotControl/>
     <div className="sourceToolbar">
       <div><b>Nyhetsradar – global discovery</b><small>Henter Norge/Norden, internasjonale markeder, globale storselskaper, resultater/guiding, sentralbanker, råvarer, oppkjøp og store markedsbevegelser. Fed og ECB leses også direkte. Andre medier brukes som discovery; originalkilden søkes opp før artikkelskriving.</small></div>
       <RadarActionControl mode="run"/>
@@ -177,7 +179,7 @@ export default async function RedaksjonPage({ searchParams }) {
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
           <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Systemet foretrekker original/offisiell kilde, men én etablert nyhetskilde kan være nok for et utkast. Eksklusive opplysninger, råd og sitater krediteres tydelig.</p></div>
-          <div className="adminNote"><b>AI-flyt</b><p>Radaren oppdager og prioriterer. Børsmeldinger scores separat. Artikkelmotoren kobles først på etter at kilde- og faktapakken er testet.</p></div>
+          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten kan nå tømme hele radararbeidskøen i én kjøring: scoring → kilde/faktapakke → privat utkast. Ingenting autopubliseres i steg 1.</p></div>
           <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
       </div>
