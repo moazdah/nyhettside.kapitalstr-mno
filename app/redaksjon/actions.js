@@ -197,6 +197,7 @@ export async function runAutopilotStepAction(options = {}) {
   try {
     const result = await runAutopilotStep({
       discovery: options?.discovery === true,
+      runId: options?.runId ? Number(options.runId) : null,
     });
     revalidatePath('/redaksjon');
     return result;
@@ -209,6 +210,44 @@ export async function runAutopilotStepAction(options = {}) {
       requested: 0,
       errors: [error?.message || 'Ukjent autopilot-feil'],
       state: null,
+    };
+  }
+}
+
+
+export async function manualCreateStoryAction(id) {
+  await requireAdmin();
+  const radarId = Number(id);
+  if (!Number.isFinite(radarId)) {
+    return { ok: false, error: 'Ugyldig radartreff.' };
+  }
+
+  try {
+    const pack = await buildFactPackForRadarItem(radarId, { manualOverride: true });
+    revalidatePath('/redaksjon');
+
+    if (pack.status !== 'ready' || pack.canWrite !== true) {
+      return {
+        ok: false,
+        stage: 'fact-pack',
+        error: pack.status === 'needs_source'
+          ? 'Fant ikke et sterkt nok kildegrunnlag ennå.'
+          : pack.status === 'needs_review'
+            ? 'Faktapakken trenger redaksjonell kontroll før artikkelen kan skrives.'
+            : 'Kildegrunnlaget er for tynt til å skrive en trygg artikkel akkurat nå.',
+        pack,
+      };
+    }
+
+    const article = await generateArticleDraftFromRadar(radarId);
+    revalidatePath('/redaksjon');
+    return { ok: true, stage: 'draft', ...article };
+  } catch (error) {
+    console.error('Kapitalstrøm manual story creation failed:', error);
+    return {
+      ok: false,
+      stage: 'error',
+      error: error?.message || 'Kunne ikke lage saken.',
     };
   }
 }
