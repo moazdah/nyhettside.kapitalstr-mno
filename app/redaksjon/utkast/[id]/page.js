@@ -79,15 +79,15 @@ export default async function DraftReviewPage({ params }) {
 
         <aside className="adminAside">
           <div className="adminNote">
-            <b>Primærkilde</b>
-            <p>{article.primary_source_name || 'Ikke registrert'}</p>
-            {article.primary_source_url ? <a href={article.primary_source_url} target="_blank" rel="noreferrer">Åpne originalkilden ↗</a> : null}
+            <b>Kildegrunnlag</b>
+            <p>{article.primary_source_name || 'Ikke registrert'}{article.source_role === 'trusted_secondary' ? ' · etablert nyhetskilde' : article.source_role === 'primary' ? ' · offisiell/primærkilde' : ''}</p>
+            {article.primary_source_url ? <a href={article.primary_source_url} target="_blank" rel="noreferrer">Åpne kilden ↗</a> : null}
           </div>
 
           <div className="adminNote">
             <b>Discovery-kilde</b>
             <p>{article.discovery_source_name || '—'}</p>
-            {article.credit_required ? <p><strong>Kreditering må vurderes tydelig.</strong></p> : <p>Brukt som tipsradar, ikke som faktagrunnlag.</p>}
+            {article.credit_required ? <p><strong>Kreditering skal være tydelig i saken.</strong></p> : <p>Discovery-kilden kan være tipskilde eller støttekilde; kildejournalen viser rollen.</p>}
           </div>
 
           <div className="adminNote">
@@ -99,7 +99,7 @@ export default async function DraftReviewPage({ params }) {
           <div className="adminNote">
             <b>Faktapakke · {article.fact_confidence ?? '—'}/100</b>
             <p>{article.headline_fact || '—'}</p>
-            <p>{facts.length} fakta · {numbers.length} tall · {unknowns.length} åpne punkter</p>
+            <p>{facts.length} fakta · {numbers.length} tall · {unknowns.length} interne kontrollpunkter</p>
           </div>
 
           <div className="adminNote">
