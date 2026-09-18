@@ -1,9 +1,7 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { expectedSessionValue, safeEqual, SESSION_COOKIE } from '../../lib/auth';
 import { approveDraft, archiveArticle, rejectDraft, setPinned, updateDraftArticle, createManualDraft } from '../../lib/admin-db';
 import { syncNorgesBankFx } from '../../lib/sources/norges-bank';
 import { syncNorgesBankPolicyRate } from '../../lib/sources/norges-bank-policy-rate';
@@ -17,16 +15,13 @@ import { generateArticleDraftFromRadar } from '../../lib/ai/write-article';
 import { runAutopilotStep } from '../../lib/autopilot/autopilot';
 
 async function requireAdmin() {
-  const store = await cookies();
-  const actual = store.get(SESSION_COOKIE)?.value || '';
-  const expected = await expectedSessionValue();
-  if (!safeEqual(actual, expected)) redirect('/redaksjon/login');
+  // TEMPORARY DEVELOPMENT MODE:
+  // Authentication is intentionally disabled until the site is ready to go live.
+  return true;
 }
 
 export async function logoutAction() {
-  const store = await cookies();
-  store.delete(SESSION_COOKIE);
-  redirect('/redaksjon/login');
+  redirect('/redaksjon');
 }
 
 export async function approveAction(formData) {
