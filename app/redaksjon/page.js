@@ -5,6 +5,7 @@ import { archiveAction, createManualDraftAction, logoutAction, pinAction, reject
 import RadarActionControl from './RadarActionControl';
 import FactPackButton from './FactPackButton';
 import ArticleDraftButton from './ArticleDraftButton';
+import AdminSubmitButton from './AdminSubmitButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ function Queue({ items }) {
         <b>Skriv selv</b>
         <small>Opprett et helt tomt privat utkast med samme editor for tekst, kildelenker, bilde og forhåndsvisning.</small>
       </div>
-      <form action={createManualDraftAction}><button>Ny egen artikkel</button></form>
+      <form action={createManualDraftAction}><AdminSubmitButton pendingText="Oppretter …">Ny egen artikkel</AdminSubmitButton></form>
     </div>
     {!items.length ? <Empty>Ingen utkast i køen akkurat nå.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Sak</th><th>Kilde</th><th>Tall</th><th>Tid</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}>
       <td><span className="scoreBadge">{a.ai_score ?? '—'}</span></td>
@@ -44,7 +45,7 @@ function Queue({ items }) {
       <td>{a.kilde_navn || (a.kilde_url ? 'Ekstern kilde' : 'Egen artikkel')}</td>
       <td><span className={a.tall_validert ? 'validation ok' : 'validation warn'}>{a.tall_validert ? 'TALL VALIDERT' : 'KONTROLLER'}</span></td>
       <td>{clockTime(a.created_at)}</td>
-      <td className="adminActions"><Link href={`/redaksjon/utkast/${a.id}`} className="secondaryLink">Åpne / rediger</Link><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Avvis</button></form></td>
+      <td className="adminActions"><Link href={`/redaksjon/utkast/${a.id}`} className="secondaryLink">Åpne / rediger</Link><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><AdminSubmitButton className="secondary" pendingText="Avviser …">Avvis</AdminSubmitButton></form></td>
     </tr>)}</tbody></table></div>}
   </>;
 }
@@ -97,12 +98,12 @@ function NewsRadar({ items }) {
 
 function FrontPage({ items }) {
   if (!items.length) return <Empty>Ingen publiserte saker.</Empty>;
-  return <div className="priorityList">{items.map((a, i) => <div className="priorityRow" key={a.id}><div className="priorityPos">{String(i + 1).padStart(2, '0')}</div><div className="priorityMain"><span className="eyebrow">{a.seksjon}</span><b>{a.tittel}</b><small>Score {a.ai_score ?? '—'} {a.pinned ? '· LÅST' : ''}</small></div><form action={pinAction}><input type="hidden" name="id" value={a.id}/><input type="hidden" name="pinned" value={a.pinned ? 'false' : 'true'}/><button className="secondary">{a.pinned ? 'Frigi' : 'Lås som hovedsak'}</button></form></div>)}</div>;
+  return <div className="priorityList">{items.map((a, i) => <div className="priorityRow" key={a.id}><div className="priorityPos">{String(i + 1).padStart(2, '0')}</div><div className="priorityMain"><span className="eyebrow">{a.seksjon}</span><b>{a.tittel}</b><small>Score {a.ai_score ?? '—'} {a.pinned ? '· LÅST' : ''}</small></div><form action={pinAction}><input type="hidden" name="id" value={a.id}/><input type="hidden" name="pinned" value={a.pinned ? 'false' : 'true'}/><AdminSubmitButton className="secondary" pendingText={a.pinned ? 'Frigir …' : 'Låser …'}>{a.pinned ? 'Frigi' : 'Lås som hovedsak'}</AdminSubmitButton></form></div>)}</div>;
 }
 
 function Published({ items }) {
   if (!items.length) return <Empty>Ingen publiserte saker.</Empty>;
-  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Sak</th><th>Seksjon</th><th>Publisert</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}><td><Link href={`/artikkel/${a.slug}`}><b>{a.tittel}</b></Link></td><td>{a.seksjon}</td><td>{fullDate(a.publisert_at)}</td><td><form action={archiveAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Arkiver</button></form></td></tr>)}</tbody></table></div>;
+  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Sak</th><th>Seksjon</th><th>Publisert</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}><td><Link href={`/artikkel/${a.slug}`}><b>{a.tittel}</b></Link></td><td>{a.seksjon}</td><td>{fullDate(a.publisert_at)}</td><td><form action={archiveAction}><input type="hidden" name="id" value={a.id}/><AdminSubmitButton className="secondary" pendingText="Arkiverer …">Arkiver</AdminSubmitButton></form></td></tr>)}</tbody></table></div>;
 }
 
 function Feed({ items }) {
@@ -126,19 +127,19 @@ function Sources({ items, policyRate, rawItems }) {
   return <>
     <div className="sourceToolbar">
       <div><b>Norges Bank – markeder og styringsrente</b><small>Henter offisielle valutakurser og overvåker styringsrenten. Ved en faktisk renteendring lages et utkast med score 100 i redaksjonskøen – ingenting autopubliseres ennå.</small></div>
-      <form action={syncNorgesBankAction}><button>Oppdater alt nå</button></form>
+      <form action={syncNorgesBankAction}><AdminSubmitButton pendingText="Oppdaterer …">Oppdater alt nå</AdminSubmitButton></form>
     </div>
     <div className="sourceToolbar">
       <div><b>Styringsrente</b><small>{policyRate ? `Sist registrert: ${marketValue('NOKPOLICY', policyRate.verdi)} · oppdatert ${fullDate(policyRate.oppdatert)}` : 'Ikke registrert ennå. Første sjekk oppretter bare referanseverdien.'}</small></div>
-      <form action={syncPolicyRateAction}><button className="secondary">Sjekk renten nå</button></form>
+      <form action={syncPolicyRateAction}><AdminSubmitButton className="secondary" pendingText="Sjekker …">Sjekk renten nå</AdminSubmitButton></form>
     </div>
     <div className="sourceToolbar">
       <div><b>Oslo Børs – selskapsmeldinger</b><small>Testadapter mot Euronexts offentlige Oslo Børs-side. Henter de nyeste meldingene til raw_items. Kjøring er manuell inntil stabilitet og vilkår er verifisert.</small></div>
-      <form action={syncEuronextOsloAction}><button>Hent børsmeldinger nå</button></form>
+      <form action={syncEuronextOsloAction}><AdminSubmitButton pendingText="Henter …">Hent børsmeldinger nå</AdminSubmitButton></form>
     </div>
     <div className="sourceToolbar">
       <div><b>AI-scoring – DeepSeek</b><small>Sender maks 20 ventende råmeldinger i én billig batch. Kun score, seksjon og kort begrunnelse returneres; ingen artikkel skrives eller publiseres. {pendingCount} av de viste meldingene venter scoring.</small></div>
-      <form action={scoreRawItemsAction}><button>Score ventende nå</button></form>
+      <form action={scoreRawItemsAction}><AdminSubmitButton pendingText="AI scorer …">Score ventende nå</AdminSubmitButton></form>
     </div>
     {!items.length ? <Empty>Ingen kilder er registrert ennå.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Kilde</th><th>Type</th><th>Intervall</th><th>Status</th><th>Sist hentet</th></tr></thead><tbody>{items.map((s) => <tr key={s.id}><td><b>{s.navn}</b><small>{s.url}</small></td><td>{s.type}</td><td>{s.intervall_min} min</td><td>{s.aktiv ? 'Aktiv' : 'Av'}</td><td>{s.sist_hentet ? fullDate(s.sist_hentet) : 'Aldri'}</td></tr>)}</tbody></table></div>}
     <div className="sectionKicker" style={{ marginTop: 24, marginBottom: 10 }}>Siste råmeldinger</div>
@@ -156,7 +157,7 @@ export default async function RedaksjonPage({ searchParams }) {
     <main className="adminShell">
       <header className="adminHeader">
         <Link href="/" className="adminBrand"><img src="/kapitalstrom-logo.png" alt="Kapitalstrøm"/><span>Redaksjon</span></Link>
-        <div className="adminHeaderRight"><span>Produksjon</span><form action={logoutAction}><button className="secondary">Logg ut</button></form></div>
+        <div className="adminHeaderRight"><span>Produksjon</span><form action={logoutAction}><AdminSubmitButton className="secondary" pendingText="Logger ut …">Logg ut</AdminSubmitButton></form></div>
       </header>
       <TabNav active={active}/>
       <div className="adminContentGrid">
