@@ -3,6 +3,7 @@ import { db } from '../../../lib/db';
 import { ensureRawItemScoringSchema } from '../../../lib/ai/score-raw-items';
 
 export const dynamic = 'force-dynamic';
+// Production redeploy trigger
 
 function deploymentMeta() {
   return {
