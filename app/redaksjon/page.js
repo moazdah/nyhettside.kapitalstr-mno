@@ -62,17 +62,21 @@ function NewsRadar({ items }) {
       <td>{i.candidate_type || 'Ikke vurdert'}</td>
       <td>
         {i.credit_required ? <span className="validation warn">KREDITER TYDELIG</span> : (i.next_step || 'Venter AI')}
-        {i.primary_source_status === 'verified' ? <small>Primærkilde verifisert</small> : <small>Primærkilde ikke verifisert</small>}
+        {i.primary_source_status === 'verified'
+          ? <small>Offisiell kilde funnet</small>
+          : i.primary_source_status === 'trusted_secondary'
+            ? <small>Etablert nyhetskilde godkjent</small>
+            : <small>Kildegrunnlag ikke ferdig</small>}
       </td>
       <td>
         {i.fact_pack_status === 'ready' ? <span className="validation ok">KLAR · {i.fact_confidence}/100</span> : null}
         {i.fact_pack_status === 'needs_review' ? <span className="validation warn">TRENGER KONTROLL · {i.fact_confidence}/100</span> : null}
         {i.fact_pack_status === 'needs_source' ? <span className="validation warn">TRENGER KILDE</span> : null}
         {i.fact_pack_status === 'insufficient_source' ? <span className="validation warn">KILDE FOR TYNN</span> : null}
-        {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v4' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
+        {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v5' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
         {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
-        {i.primary_source_name ? <small>Primærkilde: {i.primary_source_name}</small> : null}
-        {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v4'
+        {i.primary_source_name ? <small>Kildegrunnlag: {i.primary_source_name}{i.source_role === 'trusted_secondary' ? ' · etablert nyhetskilde' : ' · offisiell/primær'}</small> : null}
+        {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v5'
           ? <ArticleDraftButton id={i.id}/>
           : (i.ai_model === radarModelTag && Number(i.ai_score) >= 60
               ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/>
@@ -163,7 +167,7 @@ export default async function RedaksjonPage({ searchParams }) {
           <div className="adminStat"><span>Publisert</span><strong>{data.published.length}</strong></div>
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
-          <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Før artikkelskriving skal systemet skille oppdagelseskilde, primærkilde og eventuelle kilder som må krediteres tydelig.</p></div>
+          <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Systemet foretrekker original/offisiell kilde, men én etablert nyhetskilde kan være nok for et utkast. Eksklusive opplysninger, råd og sitater krediteres tydelig.</p></div>
           <div className="adminNote"><b>AI-flyt</b><p>Radaren oppdager og prioriterer. Børsmeldinger scores separat. Artikkelmotoren kobles først på etter at kilde- og faktapakken er testet.</p></div>
           <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
