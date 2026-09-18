@@ -11,7 +11,7 @@ export default function ArticleDraftButton({ id }) {
 
   function handleClick() {
     if (isPending) return;
-    setMessage('Skriver utkast og faktasjekker det mot faktapakken …');
+    setMessage('Skriver et nytt privat utkast fra faktapakken …');
 
     startTransition(async () => {
       try {
@@ -23,8 +23,8 @@ export default function ArticleDraftButton({ id }) {
           const checkText = result.tallValidert
             ? 'tallkontroll bestått'
             : 'lagret med et kontrollpunkt';
-          setMessage(result.status === 'existing'
-            ? 'Utkastet finnes allerede. Går til utkastskøen …'
+          setMessage(result.status === 'regenerated'
+            ? 'Eksisterende utkast er skrevet på nytt. Går til utkastskøen …'
             : `Utkast lagret · ${checkText}. Går til utkastskøen …`);
           router.push('/redaksjon?tab=ko');
           return;
@@ -43,7 +43,7 @@ export default function ArticleDraftButton({ id }) {
   return (
     <div style={{ minWidth: 150 }}>
       <button type="button" onClick={handleClick} disabled={isPending} aria-busy={isPending}>
-        {isPending ? 'Skriver og sjekker …' : 'Lag artikkelutkast'}
+        {isPending ? 'Skriver utkast …' : 'Lag / regenerer utkast'}
       </button>
       {message ? <small aria-live="polite" style={{ display: 'block', marginTop: 6, maxWidth: 240 }}>{message}</small> : null}
     </div>
