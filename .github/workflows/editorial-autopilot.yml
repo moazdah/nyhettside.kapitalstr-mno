@@ -1,0 +1,61 @@
+name: Kapitalstrøm redaksjonsautopilot
+
+on:
+  schedule:
+    # Covers 06-23 Europe/Oslo in both CET and CEST.
+    # The endpoint itself rejects starts outside 06-23 local Oslo time.
+    - cron: '0 4-22 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: kapitalstrom-editorial-autopilot
+  cancel-in-progress: false
+
+jobs:
+  editorial-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Run one complete editorial round
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          BASE_URL: https://nyhettside-kapitalstr-mno-ashy.vercel.app
+        run: |
+          set -euo pipefail
+          test -n "$CRON_SECRET"
+
+          call_step() {
+            curl --fail --silent --show-error               --retry 3 --retry-all-errors --retry-delay 5               --max-time 290               -H "Authorization: Bearer $CRON_SECRET"               "$1"
+          }
+
+          echo "Starter Kapitalstrøm redaksjonsrunde …"
+          response="$(call_step "$BASE_URL/api/cron/editorial-autopilot?discovery=1")"
+          echo "$response" | jq .
+
+          if [ "$(echo "$response" | jq -r '.skipped // false')" = "true" ]; then
+            echo "Utenfor redaksjonstid i Oslo. Ingen runde startet."
+            exit 0
+          fi
+
+          run_id="$(echo "$response" | jq -r '.runId')"
+          test "$run_id" != "null"
+          test -n "$run_id"
+
+          for step in $(seq 1 45); do
+            response="$(call_step "$BASE_URL/api/cron/editorial-autopilot?runId=$run_id")"
+            stage="$(echo "$response" | jq -r '.stage // "unknown"')"
+            processed="$(echo "$response" | jq -r '.processed // 0')"
+            progress="$(echo "$response" | jq -r '.state.progressPct // 0')"
+            echo "Steg $step · $stage · behandlet $processed · $progress%"
+
+            if [ "$stage" = "done" ]; then
+              drafts="$(echo "$response" | jq -r '.state.draftsCreated // 0')"
+              echo "Redaksjonsrunde ferdig. Private utkast: $drafts"
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Autopiloten nådde sikkerhetsgrensen på 45 steg før eksplisitt done."
+          exit 1
