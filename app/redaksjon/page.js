@@ -51,20 +51,20 @@ function Queue({ items }) {
 }
 
 function NewsRadar({ items }) {
-  const radarModelTag = 'deepseek-flash/radar-v2';
+  const radarModelTag = 'deepseek-flash/radar-v3';
   const waiting = items.filter((i) => i.ai_score == null || i.ai_model !== radarModelTag).length;
   const candidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60).length;
   return <>
     <div className="sourceToolbar">
-      <div><b>Nyhetsradar – discovery</b><small>Henter overskrifter og metadata fra åpne RSS-feeder og GDELTs globale nyhetsindeks. Andre medier brukes som tipsradar, ikke som tekstgrunnlag. Hvert nytt treff får en kildejournal.</small></div>
+      <div><b>Nyhetsradar – global discovery</b><small>Henter Norge/Norden, internasjonale markeder, globale storselskaper, resultater/guiding, sentralbanker, råvarer, oppkjøp og store markedsbevegelser. Fed og ECB leses også direkte. Andre medier brukes som discovery; originalkilden søkes opp før artikkelskriving.</small></div>
       <RadarActionControl mode="run"/>
     </div>
     <div className="sourceToolbar">
-      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer nyhetsverdi, seksjon, hendelsestype og neste kildegrep med streng kilde-/faktadisiplin. Den skriver ingen artikkel. {waiting} av de viste treffene trenger ny v2-vurdering · {candidates} scorer 60+ etter nye regler.</small></div>
+      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer global nyhetsverdi, markedsbetydning, leserinteresse og hvor mye saken egner seg til tallanalyse. Store internasjonale saker trenger ikke Norge-kobling. {waiting} av de viste treffene trenger ny v3-vurdering · {candidates} scorer 60+.</small></div>
       <RadarActionControl mode="score"/>
     </div>
     {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th><th>Faktapakke</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
-      <td>{i.ai_score == null ? '—' : <span className="scoreBadge">{i.ai_score}</span>}</td>
+      <td>{i.ai_score == null ? '—' : <><span className="scoreBadge">{i.ai_score}</span>{i.ai_model === radarModelTag ? <small>Oppm. {i.attention_score ?? '—'} · Tall {i.numbers_score ?? '—'}</small> : null}</>}</td>
       <td>{i.published_at ? fullDate(i.published_at) : fullDate(i.discovered_at)}</td>
       <td><a href={i.url} target="_blank" rel="noreferrer"><b>{i.title}</b></a>{i.ai_reason ? <small>{i.ai_section || '—'} · {i.ai_reason}</small> : (i.summary ? <small>{i.summary}</small> : null)}</td>
       <td>{i.source_domain || i.source_name}<small>{i.source_kind}</small></td>
@@ -89,7 +89,7 @@ function NewsRadar({ items }) {
           ? <ArticleDraftButton id={i.id}/>
           : (i.ai_model === radarModelTag && Number(i.ai_score) >= 60
               ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/>
-              : <small>Bygges bare for v2-score 60+</small>)}
+              : <small>Bygges bare for v3-score 60+</small>)}
 
       </td>
     </tr>)}</tbody></table></div>}
