@@ -7,6 +7,7 @@ import FactPackButton from './FactPackButton';
 import ArticleDraftButton from './ArticleDraftButton';
 import AdminSubmitButton from './AdminSubmitButton';
 import AutopilotControl from './AutopilotControl';
+import ManualStoryButton from './ManualStoryButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,8 @@ function Queue({ items }) {
 function NewsRadar({ items }) {
   const radarModelTag = 'deepseek-flash/radar-v3';
   const waiting = items.filter((i) => i.ai_score == null || i.ai_model !== radarModelTag).length;
-  const candidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60).length;
+  const autoCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 70).length;
+  const watchCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60 && Number(i.ai_score) < 70).length;
   return <>
     <AutopilotControl/>
     <div className="sourceToolbar">
@@ -62,11 +64,18 @@ function NewsRadar({ items }) {
       <RadarActionControl mode="run"/>
     </div>
     <div className="sourceToolbar">
-      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer global nyhetsverdi, markedsbetydning, leserinteresse og hvor mye saken egner seg til tallanalyse. Store internasjonale saker trenger ikke Norge-kobling. {waiting} av de viste treffene trenger ny v3-vurdering · {candidates} scorer 60+.</small></div>
+      <div><b>AI-triage av radaren</b><small>DeepSeek vurderer global nyhetsverdi, markedsbetydning, leserinteresse og tallanalyse. Autopiloten vurderer bare 70+ for timeutvalget og velger maks 3 unike hendelser. 60–69 overvåkes, men kan alltid lages manuelt. {waiting} trenger ny v3-vurdering · {autoCandidates} er 70+ · {watchCandidates} er 60–69.</small></div>
       <RadarActionControl mode="score"/>
     </div>
     {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th><th>Faktapakke</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
-      <td>{i.ai_score == null ? '—' : <><span className="scoreBadge">{i.ai_score}</span>{i.ai_model === radarModelTag ? <small>Oppm. {i.attention_score ?? '—'} · Tall {i.numbers_score ?? '—'}</small> : null}</>}</td>
+      <td>
+        {i.ai_score == null ? '—' : <>
+          <span className="scoreBadge">{i.ai_score}</span>
+          {i.ai_model === radarModelTag ? <small>Oppm. {i.attention_score ?? '—'} · Tall {i.numbers_score ?? '—'}</small> : null}
+          {i.selection_rank ? <span className="validation ok">AUTOPILOT #{i.selection_rank}</span> : null}
+          {Number(i.event_cluster_size || 0) > 1 ? <small>{i.event_cluster_size} treff samlet i samme hendelse</small> : null}
+        </>}
+      </td>
       <td>{i.published_at ? fullDate(i.published_at) : fullDate(i.discovered_at)}</td>
       <td><a href={i.url} target="_blank" rel="noreferrer"><b>{i.title}</b></a>{i.ai_reason ? <small>{i.ai_section || '—'} · {i.ai_reason}</small> : (i.summary ? <small>{i.summary}</small> : null)}</td>
       <td>{i.source_domain || i.source_name}<small>{i.source_kind}</small></td>
@@ -87,12 +96,12 @@ function NewsRadar({ items }) {
         {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v7' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
         {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
         {i.primary_source_name ? <small>Kildegrunnlag: {i.primary_source_name}{i.source_role === 'trusted_secondary' ? ' · etablert nyhetskilde' : ' · offisiell/primær'}</small> : null}
+        {i.ai_score != null ? <ManualStoryButton id={i.id}/> : null}
         {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v7'
           ? <ArticleDraftButton id={i.id}/>
           : (i.ai_model === radarModelTag && Number(i.ai_score) >= 60
               ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/>
-              : <small>Bygges bare for v3-score 60+</small>)}
-
+              : <small>Autopilot bruker 70+. Du kan fortsatt velge «Lag sak nå» manuelt.</small>)}
       </td>
     </tr>)}</tbody></table></div>}
   </>;
