@@ -11,6 +11,7 @@ const STAGE_LABELS = {
   selection: 'Velger toppsakene',
   research: 'Bygger kilde- og faktapakker',
   drafting: 'Skriver private utkast',
+  recovery: 'Prøver utsatt jobb på nytt',
   done: 'Ferdig',
 };
 
@@ -91,6 +92,10 @@ export default function AutopilotControl() {
           const selected = Array.isArray(result.selected) ? result.selected : [];
           const titles = selected.map((x) => '#' + x.rank + ' ' + x.title).join(' · ');
           setMessage(`Redaksjonelt utvalg ferdig: ${selected.length} unike saker valgt av maks 3.${titles ? ' ' + titles : ''}`);
+          stalled = 0;
+        } else if (result.stage === 'recovery') {
+          const detail = Array.isArray(result.details) ? result.details[0] : null;
+          setMessage(`Retry av tidligere utsatt ${detail?.kind === 'draft' ? 'utkast' : 'research'}: ${result.processed ? 'ferdig' : 'utsatt igjen'}.`);
           stalled = 0;
         } else {
           setMessage(`${STAGE_LABELS[result.stage] || 'Jobber'} · ${queueSummary(currentState)} · ${totalProcessed} arbeidssteg ferdig`);
