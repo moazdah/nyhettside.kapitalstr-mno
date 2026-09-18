@@ -48,8 +48,8 @@ export default function FactPackButton({ id, currentStatus }) {
 
   return (
     <div style={{ minWidth: 145 }}>
-      <button type="button" className="secondary" onClick={handleClick} disabled={isPending} aria-busy={isPending}>
-        {isPending ? 'Jobber …' : label}
+      <button type="button" className="secondary adminLoadingButton" onClick={handleClick} disabled={isPending} aria-busy={isPending}>
+        {isPending ? <><span className="adminSpinner" aria-hidden="true"/><span>Jobber …</span></> : <span>{label}</span>}
       </button>
       {message ? <small aria-live="polite" style={{ display: 'block', marginTop: 6, maxWidth: 220 }}>{message}</small> : null}
     </div>
