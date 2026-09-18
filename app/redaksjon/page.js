@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getAdminData } from '../../lib/admin-db';
 import { clockTime, fullDate, marketValue } from '../../lib/format';
-import { archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
+import { archiveAction, createManualDraftAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 import RadarActionControl from './RadarActionControl';
 import FactPackButton from './FactPackButton';
 import ArticleDraftButton from './ArticleDraftButton';
@@ -30,15 +30,23 @@ function Empty({ children }) {
 }
 
 function Queue({ items }) {
-  if (!items.length) return <Empty>Ingen utkast i køen akkurat nå.</Empty>;
-  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Sak</th><th>Kilde</th><th>Tall</th><th>Tid</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}>
-    <td><span className="scoreBadge">{a.ai_score ?? '—'}</span></td>
-    <td><Link href={`/redaksjon/utkast/${a.id}`}><b>{a.tittel}</b></Link><small>{a.seksjon}{a.ai_begrunnelse ? ` · ${a.ai_begrunnelse}` : ''}</small></td>
-    <td>{a.kilde_navn || (a.kilde_url ? 'Ekstern kilde' : '—')}</td>
-    <td><span className={a.tall_validert ? 'validation ok' : 'validation warn'}>{a.tall_validert ? 'TALL VALIDERT' : 'IKKE VALIDERT'}</span></td>
-    <td>{clockTime(a.created_at)}</td>
-    <td className="adminActions"><Link href={`/redaksjon/utkast/${a.id}`} className="secondaryLink">Åpne / rediger</Link><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Avvis</button></form></td>
-  </tr>)}</tbody></table></div>;
+  return <>
+    <div className="sourceToolbar">
+      <div>
+        <b>Skriv selv</b>
+        <small>Opprett et helt tomt privat utkast med samme editor for tekst, kildelenker, bilde og forhåndsvisning.</small>
+      </div>
+      <form action={createManualDraftAction}><button>Ny egen artikkel</button></form>
+    </div>
+    {!items.length ? <Empty>Ingen utkast i køen akkurat nå.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Sak</th><th>Kilde</th><th>Tall</th><th>Tid</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}>
+      <td><span className="scoreBadge">{a.ai_score ?? '—'}</span></td>
+      <td><Link href={`/redaksjon/utkast/${a.id}`}><b>{a.tittel}</b></Link><small>{a.seksjon}{a.ai_begrunnelse ? ` · ${a.ai_begrunnelse}` : ''}</small></td>
+      <td>{a.kilde_navn || (a.kilde_url ? 'Ekstern kilde' : 'Egen artikkel')}</td>
+      <td><span className={a.tall_validert ? 'validation ok' : 'validation warn'}>{a.tall_validert ? 'TALL VALIDERT' : 'KONTROLLER'}</span></td>
+      <td>{clockTime(a.created_at)}</td>
+      <td className="adminActions"><Link href={`/redaksjon/utkast/${a.id}`} className="secondaryLink">Åpne / rediger</Link><form action={rejectAction}><input type="hidden" name="id" value={a.id}/><button className="secondary">Avvis</button></form></td>
+    </tr>)}</tbody></table></div>}
+  </>;
 }
 
 function NewsRadar({ items }) {
@@ -73,10 +81,10 @@ function NewsRadar({ items }) {
         {i.fact_pack_status === 'needs_review' ? <span className="validation warn">TRENGER KONTROLL · {i.fact_confidence}/100</span> : null}
         {i.fact_pack_status === 'needs_source' ? <span className="validation warn">TRENGER KILDE</span> : null}
         {i.fact_pack_status === 'insufficient_source' ? <span className="validation warn">KILDE FOR TYNN</span> : null}
-        {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v6' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
+        {i.fact_pack_version && i.fact_pack_version !== 'fact-pack-v7' ? <small>Gammel faktapakke · bygg på nytt</small> : null}
         {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
         {i.primary_source_name ? <small>Kildegrunnlag: {i.primary_source_name}{i.source_role === 'trusted_secondary' ? ' · etablert nyhetskilde' : ' · offisiell/primær'}</small> : null}
-        {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v6'
+        {i.fact_pack_status === 'ready' && i.fact_pack_version === 'fact-pack-v7'
           ? <ArticleDraftButton id={i.id}/>
           : (i.ai_model === radarModelTag && Number(i.ai_score) >= 60
               ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/>
