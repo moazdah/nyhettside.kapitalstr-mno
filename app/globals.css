@@ -31,3 +31,23 @@
 
 /* AI editorial voice */
 .aiAssessment{margin:34px 0 4px;padding:22px 24px 24px;border-top:2px solid var(--navy);border-bottom:1px solid var(--line);background:#f3f5f6}.aiAssessmentLabel{font:600 11px 'IBM Plex Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);margin-bottom:10px}.prose .aiAssessment p{margin:0;font:500 18px/1.62 'Newsreader',serif;color:#1c252d}
+
+
+/* Editorial automation switches */
+.editorialAutomationPanel{background:#fff;border:1px solid var(--line);padding:18px;margin-bottom:14px}
+.editorialAutomationHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.editorialAutomationHead h3{font:600 24px 'Newsreader',serif;margin-top:3px}
+.automationStatus{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.07em;padding:6px 8px;border:1px solid var(--line);white-space:nowrap}
+.automationStatus.on{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--line))}
+.automationStatus.off{color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--line))}
+.editorialSwitchRow{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:15px 0;border-bottom:1px solid var(--line)}
+.editorialSwitchRow:last-of-type{border-bottom:0;padding-bottom:2px}
+.editorialSwitchRow b{display:block;font-size:14px}
+.editorialSwitchRow small{display:block;max-width:760px;color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:5px}
+.editorialSwitch{min-width:86px;height:36px;border-radius:20px!important;padding:4px 8px!important;display:flex;align-items:center;gap:8px;justify-content:flex-start;cursor:pointer;border:1px solid var(--line)!important;background:#ecebe7!important;color:var(--text)!important;transition:.15s ease}
+.editorialSwitch.on{background:var(--navy)!important;color:#fff!important;border-color:var(--navy)!important;flex-direction:row-reverse}
+.editorialSwitch:disabled{opacity:.6;cursor:wait}
+.editorialSwitchKnob{display:block;width:24px;height:24px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.12);flex:0 0 auto}
+.editorialSwitch strong{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.automationError{margin-top:12px;color:var(--red);font-size:12px}
+@media(max-width:650px){.editorialAutomationHead,.editorialSwitchRow{align-items:flex-start}.editorialSwitchRow{gap:12px}.editorialSwitchRow small{max-width:36ch}}

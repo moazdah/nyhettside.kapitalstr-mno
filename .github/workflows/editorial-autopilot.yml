@@ -33,7 +33,8 @@ jobs:
           echo "$response" | jq .
 
           if [ "$(echo "$response" | jq -r '.skipped // false')" = "true" ]; then
-            echo "Utenfor redaksjonstid i Oslo. Ingen runde startet."
+            reason="$(echo "$response" | jq -r '.reason // "skipped"')"
+            echo "Ingen automatisk runde startet: $reason"
             exit 0
           fi
 
@@ -50,7 +51,7 @@ jobs:
 
             if [ "$stage" = "done" ]; then
               drafts="$(echo "$response" | jq -r '.state.draftsCreated // 0')"
-              echo "Redaksjonsrunde ferdig. Private utkast: $drafts"
+              echo "Redaksjonsrunde ferdig. Skrevne saker: $drafts"
               exit 0
             fi
 

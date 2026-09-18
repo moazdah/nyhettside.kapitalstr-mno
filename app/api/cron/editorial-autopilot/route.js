@@ -1,4 +1,5 @@
 import { runAutopilotStep } from '../../../../lib/autopilot/autopilot';
+import { getEditorialSettings } from '../../../../lib/autopilot/editorial-settings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -9,13 +10,21 @@ function authorized(request) {
   return request.headers.get('authorization') === `Bearer ${secret}`;
 }
 
-function osloHour() {
-  const parts = new Intl.DateTimeFormat('en-GB', {
+function osloContext(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Oslo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     hour12: false,
-  }).formatToParts(new Date());
-  return Number(parts.find((part) => part.type === 'hour')?.value || -1);
+  }).formatToParts(now);
+
+  const value = (type) => parts.find((part) => part.type === type)?.value || '';
+  const hour = Number(value('hour') || -1);
+  const slot = `${value('year')}-${value('month')}-${value('day')}T${String(hour).padStart(2, '0')}`;
+
+  return { hour, slot };
 }
 
 export async function GET(request) {
@@ -27,30 +36,51 @@ export async function GET(request) {
   const runId = Number(url.searchParams.get('runId') || 0) || null;
   const discovery = url.searchParams.get('discovery') === '1';
 
-  // Only start a brand-new scheduled editorial round from 06:00 through 23:59 Oslo time.
-  // Existing runs may finish even if the clock crosses the boundary.
-  if (!runId) {
-    const hour = osloHour();
-    if (hour < 6 || hour > 23) {
+  try {
+    const settings = await getEditorialSettings();
+    const oslo = osloContext();
+
+    // Main kill switch: stop both new scheduled rounds and an already-running
+    // scheduled round at the next step. Manual controls in /redaksjon still work.
+    if (!settings.automationEnabled) {
+      return Response.json({
+        ok: true,
+        skipped: true,
+        reason: 'automation_disabled',
+        stage: 'done',
+        runId,
+        osloHour: oslo.hour,
+        settings,
+        checkedAt: new Date().toISOString(),
+      });
+    }
+
+    // Only start a brand-new scheduled editorial round from 06:00 through 23:59 Oslo time.
+    // Existing runs may finish even if the clock crosses the boundary.
+    if (!runId && (oslo.hour < 6 || oslo.hour > 23)) {
       return Response.json({
         ok: true,
         skipped: true,
         reason: 'outside_editorial_hours',
-        osloHour: hour,
+        stage: 'done',
+        osloHour: oslo.hour,
+        settings,
+        checkedAt: new Date().toISOString(),
       });
     }
-  }
 
-  try {
     const result = await runAutopilotStep({
       discovery,
       runId,
       mode: 'scheduled',
+      scheduledSlot: runId ? null : oslo.slot,
     });
 
     return Response.json({
       ...result,
       scheduled: true,
+      scheduledSlot: runId ? null : oslo.slot,
+      settings,
       checkedAt: new Date().toISOString(),
     });
   } catch (error) {

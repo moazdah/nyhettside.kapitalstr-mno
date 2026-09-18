@@ -8,6 +8,7 @@ import ArticleDraftButton from './ArticleDraftButton';
 import AdminSubmitButton from './AdminSubmitButton';
 import AutopilotControl from './AutopilotControl';
 import ManualStoryButton from './ManualStoryButton';
+import EditorialAutomationControls from './EditorialAutomationControls';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,7 +53,7 @@ function Queue({ items }) {
   </>;
 }
 
-function NewsRadar({ items }) {
+function NewsRadar({ items, settings }) {
   const radarModelTag = 'deepseek-v4-pro/radar-v5';
   const waiting = items.filter((i) => i.local_triage_status === 'candidate' && (i.ai_score == null || i.ai_model !== radarModelTag)).length;
   const localCandidates = items.filter((i) => i.local_triage_status === 'candidate').length;
@@ -60,6 +61,7 @@ function NewsRadar({ items }) {
   const autoCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 70).length;
   const watchCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60 && Number(i.ai_score) < 70).length;
   return <>
+    <EditorialAutomationControls initialSettings={settings}/>
     <AutopilotControl/>
     <div className="sourceToolbar">
       <div><b>Nyhetsradar – global discovery</b><small>Henter Norge/Norden, internasjonale markeder, globale storselskaper, resultater/guiding, sentralbanker, råvarer, oppkjøp og store markedsbevegelser. Fed og ECB leses også direkte. Andre medier brukes som discovery; originalkilden søkes opp før artikkelskriving.</small></div>
@@ -111,7 +113,7 @@ function NewsRadar({ items }) {
 
 function FrontPage({ items }) {
   if (!items.length) return <Empty>Ingen publiserte saker.</Empty>;
-  return <div className="priorityList">{items.map((a, i) => <div className="priorityRow" key={a.id}><div className="priorityPos">{String(i + 1).padStart(2, '0')}</div><div className="priorityMain"><span className="eyebrow">{a.seksjon}</span><b>{a.tittel}</b><small>Score {a.ai_score ?? '—'} {a.pinned ? '· LÅST' : ''}</small></div><form action={pinAction}><input type="hidden" name="id" value={a.id}/><input type="hidden" name="pinned" value={a.pinned ? 'false' : 'true'}/><AdminSubmitButton className="secondary" pendingText={a.pinned ? 'Frigir …' : 'Låser …'}>{a.pinned ? 'Frigi' : 'Lås som hovedsak'}</AdminSubmitButton></form></div>)}</div>;
+  return <div className="priorityList">{items.map((a, i) => <div className="priorityRow" key={a.id}><div className="priorityPos">{String(i + 1).padStart(2, '0')}</div><div className="priorityMain"><span className="eyebrow">{a.seksjon}</span><b>{a.tittel}</b><small>Score {a.ai_score ?? '—'} {a.pinned ? (a.pinned_source === 'auto' ? '· AI-HOVEDSAK' : '· LÅST MANUELT') : ''}</small></div><form action={pinAction}><input type="hidden" name="id" value={a.id}/><input type="hidden" name="pinned" value={a.pinned ? 'false' : 'true'}/><AdminSubmitButton className="secondary" pendingText={a.pinned ? 'Frigir …' : 'Låser …'}>{a.pinned ? 'Frigi' : 'Lås som hovedsak'}</AdminSubmitButton></form></div>)}</div>;
 }
 
 function Published({ items }) {
@@ -177,7 +179,7 @@ export default async function RedaksjonPage({ searchParams }) {
         <section className="adminMain">
           <div className="adminPageTitle"><div><div className="eyebrow">Redaksjonspanel</div><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><Link href="/" className="secondaryLink">Åpne forsiden →</Link></div>
           {active === 'ko' && <Queue items={data.queue}/>} 
-          {active === 'radar' && <NewsRadar items={data.radarItems}/>} 
+          {active === 'radar' && <NewsRadar items={data.radarItems} settings={data.editorialSettings}/>} 
           {active === 'forside' && <FrontPage items={data.liveOrder}/>} 
           {active === 'publisert' && <Published items={data.published}/>} 
           {active === 'siste' && <Feed items={data.feed}/>} 
@@ -190,7 +192,7 @@ export default async function RedaksjonPage({ searchParams }) {
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
           <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Systemet foretrekker original/offisiell kilde, men én etablert nyhetskilde kan være nok for et utkast. Eksklusive opplysninger, råd og sitater krediteres tydelig.</p></div>
-          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten filtrerer og dedupliserer lokalt før AI: råtreff → maks ca. 45 unike kandidater → AI-rangering → opptil 3 toppsaker → research → private utkast. Ingenting autopubliseres i steg 1.</p></div>
+          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten filtrerer og dedupliserer lokalt før AI: råtreff → maks ca. 45 unike kandidater → AI-rangering → opptil 3 sterke saker → research → ferdig artikkel. Publiseringsbryteren avgjør om saken går direkte ut eller havner i køen.</p></div>
           <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
       </div>
