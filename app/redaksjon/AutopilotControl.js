@@ -17,20 +17,6 @@ function queueSummary(state) {
   return `Scoring: ${state.scoring} · Kilder/fakta: ${state.research} · Utkast: ${state.drafting}`;
 }
 
-async function runStepWithTimeout(options) {
-  let timer;
-  try {
-    return await Promise.race([
-      runAutopilotStepAction(options),
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error('Et Autopilot-steg brukte mer enn 45 sekunder og ble stoppet i panelet.')), 45000);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 export default function AutopilotControl() {
   const router = useRouter();
   const stopRef = useRef(false);
@@ -60,7 +46,7 @@ export default function AutopilotControl() {
     try {
       while (!stopRef.current && loops < 160) {
         loops += 1;
-        const result = await runStepWithTimeout({ discovery: first });
+        const result = await runAutopilotStepAction({ discovery: first });
         first = false;
 
         if (!result?.ok) {
