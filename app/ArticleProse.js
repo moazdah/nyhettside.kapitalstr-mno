@@ -47,9 +47,20 @@ export default function ArticleProse({ body, className = 'prose' }) {
 
   return (
     <div className={className}>
-      {paragraphs.map((paragraph, index) => (
-        <p key={index}>{renderInline(paragraph, `p${index}`)}</p>
-      ))}
+      {paragraphs.map((paragraph, index) => {
+        const value = paragraph.trim();
+        const aiPrefix = 'AI-vurdering:';
+        if (value.toLowerCase().startsWith(aiPrefix.toLowerCase())) {
+          const analysis = value.slice(aiPrefix.length).trim();
+          return (
+            <aside className="aiAssessment" key={index}>
+              <div className="aiAssessmentLabel">AI-vurdering</div>
+              <p>{renderInline(analysis, `ai${index}`)}</p>
+            </aside>
+          );
+        }
+        return <p key={index}>{renderInline(paragraph, `p${index}`)}</p>;
+      })}
     </div>
   );
 }
