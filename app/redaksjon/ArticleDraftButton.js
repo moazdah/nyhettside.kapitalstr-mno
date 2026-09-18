@@ -20,9 +20,9 @@ export default function ArticleDraftButton({ id }) {
         const result = await generateArticleDraftAction(formData);
 
         if (result?.ok && result?.articleId) {
-          const checkText = result.verificationStatus === 'passed'
-            ? `kontroll ${result.verificationConfidence || 0}/100`
-            : 'lagret med redaksjonell advarsel';
+          const checkText = result.tallValidert
+            ? 'tallkontroll bestått'
+            : 'lagret med et kontrollpunkt';
           setMessage(result.status === 'existing'
             ? 'Utkastet finnes allerede. Går til utkastskøen …'
             : `Utkast lagret · ${checkText}. Går til utkastskøen …`);
