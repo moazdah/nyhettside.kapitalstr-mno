@@ -3,6 +3,7 @@ import { getAdminData } from '../../lib/admin-db';
 import { clockTime, fullDate, marketValue } from '../../lib/format';
 import { approveAction, archiveAction, logoutAction, pinAction, rejectAction, scoreRawItemsAction, syncEuronextOsloAction, syncNorgesBankAction, syncPolicyRateAction } from './actions';
 import RadarActionControl from './RadarActionControl';
+import FactPackButton from './FactPackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,13 +53,23 @@ function NewsRadar({ items }) {
       <div><b>AI-triage av radaren</b><small>DeepSeek vurderer nyhetsverdi, seksjon, hendelsestype og neste kildegrep med streng kilde-/faktadisiplin. Den skriver ingen artikkel. {waiting} av de viste treffene trenger ny v2-vurdering · {candidates} scorer 60+ etter nye regler.</small></div>
       <RadarActionControl mode="score"/>
     </div>
-    {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
+    {!items.length ? <Empty>Ingen radartreff ennå. Trykk «Kjør radar nå» for første manuelle test.</Empty> : <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Score</th><th>Tid</th><th>Treff</th><th>Kilde</th><th>Type</th><th>Neste steg</th><th>Faktapakke</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
       <td>{i.ai_score == null ? '—' : <span className="scoreBadge">{i.ai_score}</span>}</td>
       <td>{i.published_at ? fullDate(i.published_at) : fullDate(i.discovered_at)}</td>
       <td><a href={i.url} target="_blank" rel="noreferrer"><b>{i.title}</b></a>{i.ai_reason ? <small>{i.ai_section || '—'} · {i.ai_reason}</small> : (i.summary ? <small>{i.summary}</small> : null)}</td>
       <td>{i.source_domain || i.source_name}<small>{i.source_kind}</small></td>
       <td>{i.candidate_type || 'Ikke vurdert'}</td>
-      <td>{i.credit_required ? <span className="validation warn">KREDITER TYDELIG</span> : (i.next_step || 'Venter AI')}{i.primary_source_status === 'unverified' ? <small>Primærkilde ikke verifisert</small> : null}</td>
+      <td>
+        {i.credit_required ? <span className="validation warn">KREDITER TYDELIG</span> : (i.next_step || 'Venter AI')}
+        {i.primary_source_status === 'verified' ? <small>Primærkilde verifisert</small> : <small>Primærkilde ikke verifisert</small>}
+      </td>
+      <td>
+        {i.fact_pack_status === 'ready' ? <span className="validation ok">KLAR · {i.fact_confidence}/100</span> : null}
+        {i.fact_pack_status === 'needs_review' ? <span className="validation warn">TRENGER KONTROLL · {i.fact_confidence}/100</span> : null}
+        {i.fact_pack_status === 'needs_source' ? <span className="validation warn">TRENGER KILDE</span> : null}
+        {i.fact_pack_status && i.headline_fact ? <small>{i.headline_fact}</small> : null}
+        {i.ai_model === radarModelTag && Number(i.ai_score) >= 60 ? <FactPackButton id={i.id} currentStatus={i.fact_pack_status || ''}/> : <small>Bygges bare for v2-score 60+</small>}
+      </td>
     </tr>)}</tbody></table></div>}
   </>;
 }
