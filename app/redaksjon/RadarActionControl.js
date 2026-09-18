@@ -29,7 +29,11 @@ export default function RadarActionControl({ mode }) {
         if (isRun) {
           const seen = Number(result?.seen || 0);
           const inserted = Number(result?.inserted || 0);
-          setMessage(`Ferdig. ${seen} treff ble sjekket, ${inserted} nye ble lagret.`);
+          const globalSeen = Number(result?.globalSeen || 0);
+          const globalInserted = Number(result?.globalInserted || 0);
+          const errors = Array.isArray(result?.errors) ? result.errors : [];
+          const warning = errors.length ? ` · ${errors.length} kildekall feilet` : '';
+          setMessage(`Ferdig. ${seen} treff sjekket, ${inserted} nye lagret · global indeks: ${globalSeen} treff / ${globalInserted} nye${warning}.`);
         } else {
           const requested = Number(result?.requested || 0);
           const scored = Number(result?.scored || 0);
