@@ -88,8 +88,9 @@ export async function scoreRawItemsAction() {
 export async function runNewsRadarAction() {
   await requireAdmin();
   try {
-    await runNewsRadar();
+    const result = await runNewsRadar();
     revalidatePath('/redaksjon');
+    return { ok: true, ...result };
   } catch (error) {
     console.error('Kapitalstrøm news radar failed:', error);
     throw error;
@@ -99,8 +100,9 @@ export async function runNewsRadarAction() {
 export async function scoreRadarItemsAction() {
   await requireAdmin();
   try {
-    await scorePendingRadarItems(30);
+    const result = await scorePendingRadarItems(30);
     revalidatePath('/redaksjon');
+    return { ok: true, ...result };
   } catch (error) {
     console.error('Kapitalstrøm radar scoring failed:', error);
     redirect('/api/ai-status');
