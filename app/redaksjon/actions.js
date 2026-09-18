@@ -107,7 +107,13 @@ export async function scoreRadarItemsAction() {
     return { ok: true, ...result };
   } catch (error) {
     console.error('Kapitalstrøm radar scoring failed:', error);
-    redirect('/api/ai-status');
+    return {
+      ok: false,
+      error: error?.message || 'Ukjent feil under radarscoring.',
+      requested: 0,
+      scored: 0,
+      errors: [error?.message || 'Ukjent feil'],
+    };
   }
 }
 
