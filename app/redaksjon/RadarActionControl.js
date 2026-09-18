@@ -32,7 +32,9 @@ export default function RadarActionControl({ mode }) {
           const globalSeen = Number(result?.globalSeen || 0);
           const globalInserted = Number(result?.globalInserted || 0);
           const errors = Array.isArray(result?.errors) ? result.errors : [];
-          const warning = errors.length ? ` · ${errors.length} kildekall feilet` : '';
+          const warning = errors.length
+            ? ` · ${errors.length} kildekall feilet: ${errors.slice(0, 3).join(' | ')}`
+            : '';
           setMessage(`Ferdig. ${seen} treff sjekket, ${inserted} nye lagret · global indeks: ${globalSeen} treff / ${globalInserted} nye${warning}.`);
         } else {
           const requested = Number(result?.requested || 0);
