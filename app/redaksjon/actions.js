@@ -12,6 +12,7 @@ import { scorePendingRawItems } from '../../lib/ai/score-raw-items';
 import { runNewsRadar } from '../../lib/radar/news-radar';
 import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
 import { buildFactPackForRadarItem } from '../../lib/research/fact-pack';
+import { generateArticleDraftFromRadar } from '../../lib/ai/write-article';
 
 async function requireAdmin() {
   const store = await cookies();
@@ -117,4 +118,13 @@ export async function buildFactPackAction(formData) {
   const result = await buildFactPackForRadarItem(id);
   revalidatePath('/redaksjon');
   return { ok: true, ...result };
+}
+
+export async function generateArticleDraftAction(formData) {
+  await requireAdmin();
+  const id = Number(formData.get('id'));
+  if (!Number.isFinite(id)) throw new Error('Ugyldig radartreff.');
+  const result = await generateArticleDraftFromRadar(id);
+  revalidatePath('/redaksjon');
+  return result;
 }
