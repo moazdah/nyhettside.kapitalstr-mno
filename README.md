@@ -18,3 +18,7 @@ Denne versjonen bygger videre på v4.1 og retter visningen av valutapar som Norg
 4. Åpne forsiden og kontroller at SEK/NOK, DKK/NOK og CHF/NOK vises per 1 valutaenhet.
 
 Ingen databaseendring er nødvendig. Neste synk overskriver de eksisterende markedsverdiene med normaliserte verdier.
+
+## Redaksjonsautomasjon
+
+Produksjonen bruker nå separat hovedbryter for nyhetsmotoren og egen bryter for automatisk publisering. Den planlagte redaksjonsrunden er satt opp for én kjøring per time fra 06:00 til 23:00 norsk tid, med maks tre kvalifiserte saker per runde.
