@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { loginAction } from './actions';
+import AdminSubmitButton from '../AdminSubmitButton';
 
 export default async function RedaksjonLogin({ searchParams }) {
   const params = await searchParams;
@@ -20,7 +21,7 @@ export default async function RedaksjonLogin({ searchParams }) {
           <input type="hidden" name="next" value={next} />
           <label htmlFor="password">Passord</label>
           <input id="password" name="password" type="password" autoComplete="current-password" required autoFocus />
-          <button type="submit">Logg inn</button>
+          <AdminSubmitButton pendingText="Logger inn …">Logg inn</AdminSubmitButton>
         </form>
         <Link href="/" className="adminBackLink">← Tilbake til forsiden</Link>
       </section>
