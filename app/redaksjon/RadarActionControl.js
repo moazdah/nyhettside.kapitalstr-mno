@@ -37,9 +37,17 @@ export default function RadarActionControl({ mode }) {
             : '';
           setMessage(`Ferdig. ${seen} treff sjekket, ${inserted} nye lagret · global indeks: ${globalSeen} treff / ${globalInserted} nye${warning}.`);
         } else {
-          const requested = Number(result?.requested || 0);
-          const scored = Number(result?.scored || 0);
-          setMessage(`Ferdig. ${scored} av ${requested} treff ble vurdert.`);
+          if (result?.ok === false) {
+            setMessage(`Scoring stoppet: ${result?.error || 'ukjent feil'}`);
+          } else {
+            const requested = Number(result?.requested || 0);
+            const scored = Number(result?.scored || 0);
+            const errors = Array.isArray(result?.errors) ? result.errors : [];
+            const warning = errors.length
+              ? ` · ${errors.length} delbatch feilet: ${errors[0]}`
+              : '';
+            setMessage(`Ferdig. ${scored} av ${requested} treff ble vurdert${warning}.`);
+          }
         }
 
         router.refresh();
