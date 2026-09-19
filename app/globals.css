@@ -354,3 +354,49 @@
   .liveRailCard,.liveRailCard:nth-last-child(-n+4),.liveRailCard:nth-last-child(-n+2){border-bottom:1px solid #D8DDE1}
   .liveRailCard:last-child{border-bottom:0}
 }
+
+
+/* Persistent live rail empty state */
+.liveRailEmpty{
+  flex:1 0 auto;
+  min-width:360px;
+  height:50px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 16px;
+  color:#53616b;
+  user-select:none;
+}
+.liveRailEmpty strong{
+  font:600 12.5px/1 'IBM Plex Sans',sans-serif;
+  color:#1f2d38;
+}
+.liveRailEmpty span{
+  font:500 9.5px/1 'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+  letter-spacing:.025em;
+  color:#7f8b94;
+}
+.liveRailExpandedEmpty{
+  grid-column:1/-1;
+  min-height:120px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:20px 22px;
+  background:#fff;
+}
+.liveRailExpandedEmpty strong{
+  font:600 16px/1.2 'IBM Plex Sans',sans-serif;
+  color:#1f2d38;
+}
+.liveRailExpandedEmpty p{
+  margin:7px 0 0;
+  font-size:12.5px;
+  color:#68747d;
+}
+@media(max-width:650px){
+  .liveRailEmpty{min-width:260px;padding:0 11px}
+  .liveRailEmpty span{display:none}
+}
