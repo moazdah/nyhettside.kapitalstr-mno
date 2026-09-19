@@ -2,8 +2,8 @@ name: Kapitalstrøm live-puls
 
 on:
   schedule:
-    # Four lightweight checks per hour. Route enforces 06-23 Europe/Oslo.
-    - cron: '3,18,33,48 4-22 * * *'
+    # Lightweight check every five minutes, offset from the top of the hour. Route enforces 06-23 Europe/Oslo.
+    - cron: '2-59/5 4-22 * * *'
   workflow_dispatch:
   push:
     branches: [main]
