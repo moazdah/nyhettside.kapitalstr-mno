@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getArticleData } from '../../../lib/db';
+import { getArticleData, getArticleMeta } from '../../../lib/db';
+import { SITE_URL } from '../../../lib/site';
 import { fullDate, marketDelta, marketValue } from '../../../lib/format';
 import { Header } from '../../components';
 import LiveNewsRail from '../../LiveNewsRail';
@@ -8,13 +9,73 @@ import ArticleProse from '../../ArticleProse';
 
 export const dynamic = 'force-dynamic';
 
+function descriptionOf(article) {
+  const raw = article?.undertittel || article?.brodtekst || '';
+  return String(raw)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 190);
+}
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const article = await getArticleMeta(slug);
+  if (!article) return {};
+
+  const description = descriptionOf(article);
+  const canonical = `${SITE_URL}/artikkel/${article.slug}`;
+
+  return {
+    title: article.tittel,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: 'article',
+      url: canonical,
+      title: article.tittel,
+      description,
+      publishedTime: new Date(article.publisert_at || article.created_at).toISOString(),
+      section: article.seksjon || undefined,
+      images: article.bilde_url ? [{ url: article.bilde_url }] : undefined,
+    },
+  };
+}
+
 export default async function ArticlePage({ params }) {
   const { slug } = await params;
   const { article, feed, markets, related } = await getArticleData(slug);
   if (!article) notFound();
 
+  const canonical = `${SITE_URL}/artikkel/${article.slug}`;
+  const published = new Date(article.publisert_at || article.created_at).toISOString();
+  const newsArticle = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.tittel,
+    description: descriptionOf(article),
+    datePublished: published,
+    dateModified: published,
+    mainEntityOfPage: canonical,
+    articleSection: article.seksjon || undefined,
+    author: [{
+      '@type': 'Organization',
+      name: article.forfatter || 'Kapitalstrøm',
+    }],
+    publisher: {
+      '@type': 'Organization',
+      name: 'Kapitalstrøm',
+      url: SITE_URL,
+    },
+    image: article.bilde_url ? [article.bilde_url] : undefined,
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticle).replace(/</g, '\\u003c') }}
+      />
       <Header markets={markets} />
       <LiveNewsRail items={feed} />
       <main className="articleShell">
