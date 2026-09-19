@@ -53,7 +53,7 @@ function Queue({ items }) {
   </>;
 }
 
-function NewsRadar({ items, settings }) {
+function NewsRadar({ items, settings, runStatus }) {
   const radarModelTag = 'deepseek-v4-pro/radar-v5';
   const waiting = items.filter((i) => i.local_triage_status === 'candidate' && (i.ai_score == null || i.ai_model !== radarModelTag)).length;
   const localCandidates = items.filter((i) => i.local_triage_status === 'candidate').length;
@@ -61,7 +61,7 @@ function NewsRadar({ items, settings }) {
   const autoCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 70).length;
   const watchCandidates = items.filter((i) => i.ai_model === radarModelTag && Number(i.ai_score) >= 60 && Number(i.ai_score) < 70).length;
   return <>
-    <EditorialAutomationControls initialSettings={settings}/>
+    <EditorialAutomationControls initialSettings={settings} initialRunStatus={runStatus}/>
     <AutopilotControl/>
     <div className="sourceToolbar">
       <div><b>Nyhetsradar – global discovery</b><small>Henter Norge/Norden, internasjonale markeder, globale storselskaper, resultater/guiding, sentralbanker, råvarer, oppkjøp og store markedsbevegelser. Fed og ECB leses også direkte. Andre medier brukes som discovery; originalkilden søkes opp før artikkelskriving.</small></div>
@@ -179,7 +179,7 @@ export default async function RedaksjonPage({ searchParams }) {
         <section className="adminMain">
           <div className="adminPageTitle"><div><div className="eyebrow">Redaksjonspanel</div><h1>{tabs.find(([key]) => key === active)?.[1]}</h1></div><Link href="/" className="secondaryLink">Åpne forsiden →</Link></div>
           {active === 'ko' && <Queue items={data.queue}/>} 
-          {active === 'radar' && <NewsRadar items={data.radarItems} settings={data.editorialSettings}/>} 
+          {active === 'radar' && <NewsRadar items={data.radarItems} settings={data.editorialSettings} runStatus={data.editorialRunStatus}/>} 
           {active === 'forside' && <FrontPage items={data.liveOrder}/>} 
           {active === 'publisert' && <Published items={data.published}/>} 
           {active === 'siste' && <Feed items={data.feed}/>} 
