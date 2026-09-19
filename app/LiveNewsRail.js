@@ -185,7 +185,7 @@ export default function LiveNewsRail({ items = [] }) {
             onPointerCancel={pointerUp}
             onClickCapture={blockDraggedClick}
           >
-            {displayItems.length ? displayItems.slice(0, 12).map((item) => (
+            {displayItems.slice(0, 12).map((item) => (
               <button
                 type="button"
                 className="liveRailTeaser"
@@ -201,7 +201,7 @@ export default function LiveNewsRail({ items = [] }) {
           {expanded ? (
             <div className="liveRailExpanded">
               <div className="liveRailExpandedGrid">
-                {displayItems.length ? displayItems.slice(0, 12).map((item) => (
+                {displayItems.slice(0, 12).map((item) => (
                   <article
                     className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
                     key={item.id}
