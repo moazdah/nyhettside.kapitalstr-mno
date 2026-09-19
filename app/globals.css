@@ -587,3 +587,37 @@
   .liveRailDrawer.expanded .liveRailPulse,
   .liveRailDrawer.expanded .liveRailDrawerToggle{min-height:270px}
 }
+
+
+/* Live-roll interaction polish */
+.liveRailDrawer .liveRailStoryTrack{
+  width:max-content;
+  min-width:100%;
+}
+.liveRailDrawer .liveRailStory{
+  flex:1 0 300px;
+  width:auto;
+}
+.liveRailDrawer.expanded .liveRailStoryHead{
+  height:52px;
+  min-height:52px;
+  padding:8px 14px 7px;
+}
+.liveRailDrawer.expanded .liveRailStoryHead h3{
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font:600 12.5px/1.16 'IBM Plex Sans',sans-serif;
+}
+.liveRailDrawer.expanded .liveRailStoryBody{
+  max-height:248px;
+  padding:10px 14px 18px;
+  opacity:1;
+  border-top:0;
+}
+@media(max-width:900px){
+  .liveRailDrawer .liveRailStory{flex-basis:280px;width:auto}
+}
+@media(max-width:650px){
+  .liveRailDrawer .liveRailStory{flex-basis:240px;width:auto}
+}

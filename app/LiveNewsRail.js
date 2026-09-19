@@ -28,10 +28,10 @@ function PulseIcon() {
 
 function Destination({ item }) {
   if (item.article_slug) {
-    return <Link href={`/artikkel/${item.article_slug}`} className="liveRailLink">Les saken →</Link>;
+    return <Link href={`/artikkel/${item.article_slug}`} className="liveRailLink" onClick={(event) => event.stopPropagation()}>Les saken →</Link>;
   }
   if (item.source_url) {
-    return <a href={item.source_url} target="_blank" rel="noreferrer" className="liveRailLink">Kilde ↗</a>;
+    return <a href={item.source_url} target="_blank" rel="noreferrer" className="liveRailLink" onClick={(event) => event.stopPropagation()}>Kilde ↗</a>;
   }
   return null;
 }
@@ -120,8 +120,8 @@ export default function LiveNewsRail({ items = [] }) {
     }, 0);
   }
 
-  function openFromStory() {
-    if (!dragRef.current.moved && !expanded) setExpanded(true);
+  function toggleFromStory() {
+    if (!dragRef.current.moved) setExpanded((value) => !value);
   }
 
   return (
@@ -149,7 +149,7 @@ export default function LiveNewsRail({ items = [] }) {
               <article
                 className="liveRailStory"
                 key={item.id}
-                onClick={openFromStory}
+                onClick={toggleFromStory}
               >
                 <div className="liveRailStoryHead">
                   <h3>{item.headline || item.tekst}</h3>
