@@ -17,7 +17,7 @@ export async function GET() {
   const articles = await sql`
     SELECT slug, tittel, COALESCE(publisert_at, created_at) AS published_at
     FROM articles
-    WHERE status = 'live'
+    WHERE status IN ('live', 'arkivert')
       AND COALESCE(publisert_at, created_at) >= NOW() - interval '2 days'
     ORDER BY COALESCE(publisert_at, created_at) DESC
     LIMIT 1000
