@@ -26,10 +26,10 @@ export default function MarketTicker({ markets = [] }) {
 
     const timer = setInterval(() => {
       if (paused) return;
-      const half = el.scrollWidth / 2;
-      if (half <= el.clientWidth) return;
-      el.scrollLeft += 1.15;
-      if (el.scrollLeft >= half) el.scrollLeft -= half;
+      const segment = el.scrollWidth / 4;
+      if (!segment) return;
+      el.scrollLeft += 1.25;
+      if (el.scrollLeft >= segment) el.scrollLeft -= segment;
     }, 24);
 
     return () => clearInterval(timer);
@@ -42,7 +42,7 @@ export default function MarketTicker({ markets = [] }) {
   }
 
   if (!markets.length) return null;
-  const repeated = [...markets, ...markets];
+  const repeated = [...markets, ...markets, ...markets, ...markets];
 
   return (
     <div className="marketTickerBar" aria-label="Markedsdata">
