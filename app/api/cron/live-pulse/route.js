@@ -126,19 +126,29 @@ export async function GET(request) {
     }
 
     if (stage === 'publish') {
-      const [updatesResult, fxResult, globalResult] = await Promise.allSettled([
-        syncLiveUpdatesFromRecentRadar({
-          autoPublish: settings?.autoPublishEnabled === true,
-          minScore: 60,
-          maxNew: 4,
-        }),
+      const updates = await syncLiveUpdatesFromRecentRadar({
+        autoPublish: settings?.autoPublishEnabled === true,
+        minScore: 60,
+        maxNew: 4,
+      });
+
+      await sql`
+        UPDATE live_pulse_runs
+        SET stage = 'markets',
+            updates_created = ${Number(updates.created || 0)},
+            error = ${(updates.errors || []).length ? updates.errors.join(' | ').slice(0, 1000) : null}
+        WHERE id = ${pulseId}
+      `;
+
+      return Response.json({ ok: true, pulseId, stage: 'markets', updates });
+    }
+
+    if (stage === 'markets') {
+      const [fxResult, globalResult] = await Promise.allSettled([
         syncNorgesBankFx(),
         syncGlobalMarkets(),
       ]);
 
-      const updates = updatesResult.status === 'fulfilled'
-        ? updatesResult.value
-        : { created: 0, errors: [String(updatesResult.reason?.message || 'Nyhetsstrøm feilet')] };
       const fx = fxResult.status === 'fulfilled'
         ? { updated: fxResult.value.length, errors: [] }
         : { updated: 0, errors: [String(fxResult.reason?.message || 'Valutaoppdatering feilet')] };
@@ -146,8 +156,14 @@ export async function GET(request) {
         ? globalResult.value
         : { updated: 0, errors: [String(globalResult.reason?.message || 'Markedsoppdatering feilet')] };
 
+      const [current] = await sql`
+        SELECT error, updates_created
+        FROM live_pulse_runs
+        WHERE id = ${pulseId}
+        LIMIT 1
+      `;
       const errors = [
-        ...(updates.errors || []),
+        ...(current?.error ? [current.error] : []),
         ...(fx.errors || []),
         ...(globalMarkets.errors || []),
       ].slice(0, 12);
@@ -157,7 +173,6 @@ export async function GET(request) {
         SET status = 'done',
             stage = 'done',
             finished_at = NOW(),
-            updates_created = ${Number(updates.created || 0)},
             markets_updated = ${Number(fx.updated || 0) + Number(globalMarkets.updated || 0)},
             error = ${errors.length ? errors.join(' | ').slice(0, 1000) : null}
         WHERE id = ${pulseId}
@@ -167,7 +182,7 @@ export async function GET(request) {
         ok: true,
         pulseId,
         stage: 'done',
-        updates,
+        updatesCreated: Number(current?.updates_created || 0),
         fx,
         globalMarkets,
         errors,
