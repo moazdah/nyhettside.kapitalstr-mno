@@ -1,4 +1,3 @@
 Kapitalstrom production release
-base=f0ea5d8cb747797c6c37724434e7a776a032d125
-triggered=2026-09-19T14:45Z
-reason=manual-relaunch-latest-main-after-branch-cleanup
+base=08f3b8959a958e931bde753c0c600de8f54b71e3
+reason=remove-demo-live-rail
