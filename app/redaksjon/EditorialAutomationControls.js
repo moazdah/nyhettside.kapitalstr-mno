@@ -53,7 +53,37 @@ function runStage(run) {
   return 'Researcher valgte saker';
 }
 
-export default function EditorialAutomationControls({ initialSettings, initialRunStatus }) {
+function nextClock(minutes) {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Oslo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const hour = Number(map.hour);
+  const minute = Number(map.minute);
+  const nextMinute = minutes.find((m) => m > minute);
+  const targetHour = nextMinute == null ? (hour + 1) % 24 : hour;
+  const targetMinute = nextMinute == null ? minutes[0] : nextMinute;
+  return `${String(targetHour).padStart(2, '0')}:${String(targetMinute).padStart(2, '0')}`;
+}
+
+function pulseStage(pulse) {
+  if (!pulse) return 'Ingen live-puls registrert ennå';
+  if (pulse.status === 'error') return 'Siste live-puls feilet';
+  if (pulse.status === 'done') return 'Live-puls ferdig';
+  if (pulse.stage === 'discover') return 'Henter ferske nyheter';
+  if (pulse.stage === 'score') return 'AI vurderer nye kandidater';
+  if (pulse.stage === 'publish') return 'Oppdaterer nyhetsstripe og markedstall';
+  return 'Live-puls jobber';
+}
+
+export default function EditorialAutomationControls({ initialSettings, initialRunStatus, initialLivePulseStatus }) {
   const router = useRouter();
   const [settings, setSettings] = useState({
     automationEnabled: initialSettings?.automationEnabled !== false,
@@ -62,13 +92,15 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const run = initialRunStatus || null;
+  const pulse = initialLivePulseStatus || null;
   const running = run?.status === 'running';
+  const pulseRunning = pulse?.status === 'running';
 
   useEffect(() => {
-    if (!running) return undefined;
-    const timer = setInterval(() => router.refresh(), 10000);
+    if (!settings.automationEnabled) return undefined;
+    const timer = setInterval(() => router.refresh(), running || pulseRunning ? 10000 : 20000);
     return () => clearInterval(timer);
-  }, [running, router]);
+  }, [settings.automationEnabled, running, pulseRunning, router]);
 
   async function toggleAutomation() {
     if (busy) return;
@@ -114,32 +146,60 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
         </span>
       </div>
 
-      <div className={`editorialRunStatus ${running ? 'running' : 'idle'}`}>
-        <div className="editorialRunStatusTop">
-          <span className="editorialRunDot" aria-hidden="true" />
-          <div>
-            <b>{running ? 'JOBBER NÅ' : 'STATUS'}</b>
-            <strong>{runStage(run)}</strong>
+      <div className="automationHealthGrid">
+        <div className={`editorialRunStatus ${running ? 'running' : 'idle'}`}>
+          <div className="editorialRunStatusTop">
+            <span className="editorialRunDot" aria-hidden="true" />
+            <div>
+              <b>FULL REDAKSJONSRUNDE</b>
+              <strong>{runStage(run)}</strong>
+            </div>
+            <small>
+              {running
+                ? `Startet ${osloTime(run?.started_at)}`
+                : (run?.finished_at ? `Ferdig ${osloTime(run.finished_at)}` : 'Ingen ferdig runde ennå')}
+            </small>
           </div>
-          <small>
-            {running
-              ? `Startet ${osloTime(run?.started_at)}`
-              : (run?.finished_at ? `Ferdig ${osloTime(run.finished_at)}` : 'Ingen ferdig runde ennå')}
-          </small>
+          {run ? (
+            <div className="editorialRunMetrics">
+              <span>Valgt <b>{Number(run.selected_items || run.selected_count || 0)}</b></span>
+              <span>Faktapakker <b>{Number(run.factpacks_ready || 0)}</b></span>
+              <span>Artikler <b>{Number(run.articles_created || 0)}</b></span>
+              <span>Publisert <b>{Number(run.published_count || 0)}</b></span>
+            </div>
+          ) : null}
+          <div className="automationNext">Neste motor-sjekk ca. <b>{nextClock([7,22,37,52])}</b></div>
         </div>
-        {run ? (
-          <div className="editorialRunMetrics">
-            <span>Valgt <b>{Number(run.selected_items || run.selected_count || 0)}</b></span>
-            <span>Faktapakker <b>{Number(run.factpacks_ready || 0)}</b></span>
-            <span>Artikler <b>{Number(run.articles_created || 0)}</b></span>
-            <span>Publisert <b>{Number(run.published_count || 0)}</b></span>
+
+        <div className={`editorialRunStatus ${pulseRunning ? 'running' : (pulse?.status === 'error' ? 'error' : 'idle')}`}>
+          <div className="editorialRunStatusTop">
+            <span className="editorialRunDot" aria-hidden="true" />
+            <div>
+              <b>LIVE-PULS · 15 MIN</b>
+              <strong>{pulseStage(pulse)}</strong>
+            </div>
+            <small>
+              {pulseRunning
+                ? `Startet ${osloTime(pulse?.started_at)}`
+                : (pulse?.finished_at ? `Ferdig ${osloTime(pulse.finished_at)}` : 'Ikke kjørt ennå')}
+            </small>
           </div>
-        ) : null}
+          {pulse ? (
+            <div className="editorialRunMetrics">
+              <span>Nye treff <b>{Number(pulse.inserted || 0)}</b></span>
+              <span>Scoret <b>{Number(pulse.scored || 0)}</b></span>
+              <span>Nyhetsstripe <b>{Number(pulse.updates_created || 0)}</b></span>
+              <span>Marked <b>{Number(pulse.markets_updated || 0)}</b></span>
+            </div>
+          ) : null}
+          <div className="automationNext">Neste live-sjekk ca. <b>{nextClock([3,18,33,48])}</b></div>
+          {pulse?.error ? <div className="automationPulseError">{pulse.error}</div> : null}
+        </div>
       </div>
 
       <SwitchRow
         title="Nyhetsmotor"
-        description="Planlagt redaksjonsrunde én gang i timen fra 06:00 til 23:00 norsk tid. AV er hovedbryteren og stopper nye automatiske steg."
+        description="Hovedmotoren arbeider fra 06:00 til 23:00 norsk tid. Fullartikler behandles én gang per time, med flere redundante wake-ups. Live-strøm og markedsdata kontrolleres omtrent hvert 15. minutt. AV stopper begge."
         checked={settings.automationEnabled}
         busy={busy === 'automation'}
         onToggle={toggleAutomation}
