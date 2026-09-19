@@ -59,6 +59,58 @@ function Destination({ item }) {
 }
 
 export default function LiveNewsRail({ items = [] }) {
+  const demoItems = [
+    {
+      id: 'demo-1',
+      headline: 'Demo: Oslo Børs åpner opp etter sterke teknologitall',
+      tekst: 'Demo: Oslo Børs åpner opp etter sterke teknologitall',
+      summary: 'Fiktiv demonstrasjonssak for å vise hvordan en fersk markedsoppdatering vil se ut i live-strømmen.',
+      seksjon: 'DEMO · MARKEDER',
+      tidspunkt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'demo-2',
+      headline: 'Demo: Kronen styrker seg etter nye inflasjonstall',
+      tekst: 'Demo: Kronen styrker seg etter nye inflasjonstall',
+      summary: 'Fiktiv demonstrasjonssak som viser hvordan en kort valutaoppdatering presenteres.',
+      seksjon: 'DEMO · VALUTA',
+      tidspunkt: new Date(Date.now() - 7 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'demo-3',
+      headline: 'Demo: Nordic Grid løfter utsiktene for året',
+      tekst: 'Demo: Nordic Grid løfter utsiktene for året',
+      summary: 'Fiktivt selskapsnytt for å demonstrere formatet for korte, løpende selskapsoppdateringer.',
+      seksjon: 'DEMO · SELSKAPER',
+      tidspunkt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'demo-4',
+      headline: 'Demo: Brent-oljen stiger videre i ettermiddagshandelen',
+      tekst: 'Demo: Brent-oljen stiger videre i ettermiddagshandelen',
+      summary: 'Fiktiv råvareoppdatering laget kun for visuell testing av Kapitalstrøm.',
+      seksjon: 'DEMO · RÅVARER',
+      tidspunkt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'demo-5',
+      headline: 'Demo: Amerikanske renter faller før nye makrotall',
+      tekst: 'Demo: Amerikanske renter faller før nye makrotall',
+      summary: 'Fiktiv renteoppdatering for å vise hvordan flere samtidige saker fordeles i panelet.',
+      seksjon: 'DEMO · RENTER',
+      tidspunkt: new Date(Date.now() - 24 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'demo-6',
+      headline: 'Demo: Bitcoin passerer ny intradagstopp',
+      tekst: 'Demo: Bitcoin passerer ny intradagstopp',
+      summary: 'Fiktiv kryptosak som demonstrerer hvordan en kort markedsmelding vil se ut.',
+      seksjon: 'DEMO · KRYPTO',
+      tidspunkt: new Date(Date.now() - 31 * 60 * 1000).toISOString(),
+    },
+  ];
+  const displayItems = items.length ? items : demoItems;
+
   const [expanded, setExpanded] = useState(false);
   const [focusedId, setFocusedId] = useState(null);
   const [dragging, setDragging] = useState(false);
@@ -133,7 +185,7 @@ export default function LiveNewsRail({ items = [] }) {
             onPointerCancel={pointerUp}
             onClickCapture={blockDraggedClick}
           >
-            {items.length ? items.slice(0, 12).map((item) => (
+            {displayItems.length ? displayItems.slice(0, 12).map((item) => (
               <button
                 type="button"
                 className="liveRailTeaser"
@@ -143,18 +195,13 @@ export default function LiveNewsRail({ items = [] }) {
                 <strong>{item.headline || item.tekst}</strong>
                 <span>{time(item.tidspunkt)}{item.seksjon ? ` · ${item.seksjon}` : ''}</span>
               </button>
-            )) : (
-              <div className="liveRailEmpty">
-                <strong>Venter på ferske oppdateringer</strong>
-                <span>Live-strømmen fylles når nye finansnyheter kommer inn</span>
-              </div>
-            )}
+            ))}
           </div>
 
           {expanded ? (
             <div className="liveRailExpanded">
               <div className="liveRailExpandedGrid">
-                {items.length ? items.slice(0, 12).map((item) => (
+                {displayItems.length ? displayItems.slice(0, 12).map((item) => (
                   <article
                     className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
                     key={item.id}
@@ -167,12 +214,7 @@ export default function LiveNewsRail({ items = [] }) {
                     {item.summary ? <p>{item.summary}</p> : null}
                     <Destination item={item} />
                   </article>
-                )) : (
-                  <div className="liveRailExpandedEmpty">
-                    <strong>Ingen ferske oppdateringer akkurat nå</strong>
-                    <p>Nye, relevante finansnyheter dukker opp her fortløpende.</p>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
           ) : null}
