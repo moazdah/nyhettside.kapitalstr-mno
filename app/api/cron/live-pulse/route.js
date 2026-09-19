@@ -79,7 +79,7 @@ export async function GET(request) {
         });
       }
 
-      const radar = await runNewsRadar();
+      const radar = await runNewsRadar({ liveOnly: true });
       const triage = await prepareRadarCandidates(sql, { maxCandidates: 30 });
       await sql`
         UPDATE live_pulse_runs

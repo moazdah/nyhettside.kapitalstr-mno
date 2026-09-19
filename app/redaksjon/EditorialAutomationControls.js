@@ -79,7 +79,8 @@ function pulseStage(pulse) {
   if (pulse.status === 'done') return 'Live-puls ferdig';
   if (pulse.stage === 'discover') return 'Henter ferske nyheter';
   if (pulse.stage === 'score') return 'AI vurderer nye kandidater';
-  if (pulse.stage === 'publish') return 'Oppdaterer nyhetsstripe og markedstall';
+  if (pulse.stage === 'publish') return 'Oppdaterer nyhetsstripen';
+  if (pulse.stage === 'markets') return 'Oppdaterer markedstall';
   return 'Live-puls jobber';
 }
 
@@ -175,7 +176,7 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
           <div className="editorialRunStatusTop">
             <span className="editorialRunDot" aria-hidden="true" />
             <div>
-              <b>LIVE-PULS · 15 MIN</b>
+              <b>LIVE-PULS · 5 MIN</b>
               <strong>{pulseStage(pulse)}</strong>
             </div>
             <small>
@@ -192,14 +193,14 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
               <span>Marked <b>{Number(pulse.markets_updated || 0)}</b></span>
             </div>
           ) : null}
-          <div className="automationNext">Neste live-sjekk ca. <b>{nextClock([3,18,33,48])}</b></div>
+          <div className="automationNext">Neste live-sjekk ca. <b>{nextClock([2,7,12,17,22,27,32,37,42,47,52,57])}</b></div>
           {pulse?.error ? <div className="automationPulseError">{pulse.error}</div> : null}
         </div>
       </div>
 
       <SwitchRow
         title="Nyhetsmotor"
-        description="Hovedmotoren arbeider fra 06:00 til 23:00 norsk tid. Fullartikler behandles én gang per time, med flere redundante wake-ups. Live-strøm og markedsdata kontrolleres omtrent hvert 15. minutt. AV stopper begge."
+        description="Hovedmotoren arbeider fra 06:00 til 23:00 norsk tid. Fullartikler behandles én gang per time, med flere redundante wake-ups. Live-strøm og markedsdata kontrolleres omtrent hvert 5. minutt. AV stopper begge."
         checked={settings.automationEnabled}
         busy={busy === 'automation'}
         onToggle={toggleAutomation}

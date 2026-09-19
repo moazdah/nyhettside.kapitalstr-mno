@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 function time(value) {
   if (!value) return '';
@@ -61,17 +61,59 @@ function Destination({ item }) {
 export default function LiveNewsRail({ items = [] }) {
   const [expanded, setExpanded] = useState(false);
   const [focusedId, setFocusedId] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const scrollerRef = useRef(null);
+  const dragRef = useRef({ active: false, startX: 0, startScroll: 0, moved: false });
 
   if (!items.length) return null;
 
   function openItem(id) {
+    if (dragRef.current.moved) return;
     setFocusedId(id);
     setExpanded(true);
   }
 
+  function pointerDown(event) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    dragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startScroll: el.scrollLeft,
+      moved: false,
+    };
+    setDragging(true);
+    el.setPointerCapture?.(event.pointerId);
+  }
+
+  function pointerMove(event) {
+    const el = scrollerRef.current;
+    const drag = dragRef.current;
+    if (!el || !drag.active) return;
+    const delta = event.clientX - drag.startX;
+    if (Math.abs(delta) > 4) drag.moved = true;
+    el.scrollLeft = drag.startScroll - delta;
+  }
+
+  function pointerUp(event) {
+    const el = scrollerRef.current;
+    dragRef.current.active = false;
+    setDragging(false);
+    el?.releasePointerCapture?.(event.pointerId);
+    setTimeout(() => {
+      dragRef.current.moved = false;
+    }, 0);
+  }
+
+  function blockDraggedClick(event) {
+    if (!dragRef.current.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   return (
     <section className={`liveRail ${expanded ? 'expanded' : ''}`} aria-label="Løpende nyhetsoppdateringer">
-      <div className="liveRailCompact">
+      <div className="liveRailFrame">
         <button
           type="button"
           className="liveRailPulse"
@@ -82,18 +124,49 @@ export default function LiveNewsRail({ items = [] }) {
           <PulseIcon />
         </button>
 
-        <div className="liveRailScroller">
-          {items.slice(0, 7).map((item) => (
-            <button
-              type="button"
-              className="liveRailTeaser"
-              key={item.id}
-              onClick={() => openItem(item.id)}
-            >
-              <strong>{item.headline || item.tekst}</strong>
-              <span>{time(item.tidspunkt)}{item.seksjon ? ` · ${item.seksjon}` : ''}</span>
-            </button>
-          ))}
+        <div className="liveRailMain">
+          <div
+            className={`liveRailScroller ${dragging ? 'dragging' : ''}`}
+            ref={scrollerRef}
+            onPointerDown={pointerDown}
+            onPointerMove={pointerMove}
+            onPointerUp={pointerUp}
+            onPointerCancel={pointerUp}
+            onClickCapture={blockDraggedClick}
+          >
+            {items.slice(0, 12).map((item) => (
+              <button
+                type="button"
+                className="liveRailTeaser"
+                key={item.id}
+                onClick={() => openItem(item.id)}
+              >
+                <strong>{item.headline || item.tekst}</strong>
+                <span>{time(item.tidspunkt)}{item.seksjon ? ` · ${item.seksjon}` : ''}</span>
+              </button>
+            ))}
+          </div>
+
+          {expanded ? (
+            <div className="liveRailExpanded">
+              <div className="liveRailExpandedGrid">
+                {items.slice(0, 12).map((item) => (
+                  <article
+                    className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
+                    key={item.id}
+                  >
+                    <div className="liveRailMeta">
+                      <time>{time(item.tidspunkt)}</time>
+                      {item.seksjon ? <span>{item.seksjon}</span> : null}
+                    </div>
+                    <h3>{item.headline || item.tekst}</h3>
+                    {item.summary ? <p>{item.summary}</p> : null}
+                    <Destination item={item} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <button
@@ -106,33 +179,6 @@ export default function LiveNewsRail({ items = [] }) {
           <span>{expanded ? '⌃' : '⌄'}</span>
         </button>
       </div>
-
-      {expanded ? (
-        <div className="liveRailPanel">
-          <div className="liveRailPanelGrid">
-            <div className="liveRailStem" aria-hidden="true">
-              <span />
-            </div>
-            <div className="liveRailPanelInner">
-              {items.slice(0, 12).map((item) => (
-                <article
-                  className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
-                  key={item.id}
-                >
-                  <div className="liveRailMeta">
-                    <time>{time(item.tidspunkt)}</time>
-                    {item.seksjon ? <span>{item.seksjon}</span> : null}
-                  </div>
-                  <h3>{item.headline || item.tekst}</h3>
-                  {item.summary ? <p>{item.summary}</p> : null}
-                  <Destination item={item} />
-                </article>
-              ))}
-            </div>
-            <div className="liveRailPanelEdge" aria-hidden="true" />
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
