@@ -65,7 +65,6 @@ export default function LiveNewsRail({ items = [] }) {
   const scrollerRef = useRef(null);
   const dragRef = useRef({ active: false, startX: 0, startScroll: 0, moved: false });
 
-  if (!items.length) return null;
 
   function openItem(id) {
     if (dragRef.current.moved) return;
@@ -134,7 +133,7 @@ export default function LiveNewsRail({ items = [] }) {
             onPointerCancel={pointerUp}
             onClickCapture={blockDraggedClick}
           >
-            {items.slice(0, 12).map((item) => (
+            {items.length ? items.slice(0, 12).map((item) => (
               <button
                 type="button"
                 className="liveRailTeaser"
@@ -144,13 +143,18 @@ export default function LiveNewsRail({ items = [] }) {
                 <strong>{item.headline || item.tekst}</strong>
                 <span>{time(item.tidspunkt)}{item.seksjon ? ` · ${item.seksjon}` : ''}</span>
               </button>
-            ))}
+            )) : (
+              <div className="liveRailEmpty">
+                <strong>Venter på ferske oppdateringer</strong>
+                <span>Live-strømmen fylles når nye finansnyheter kommer inn</span>
+              </div>
+            )}
           </div>
 
           {expanded ? (
             <div className="liveRailExpanded">
               <div className="liveRailExpandedGrid">
-                {items.slice(0, 12).map((item) => (
+                {items.length ? items.slice(0, 12).map((item) => (
                   <article
                     className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
                     key={item.id}
@@ -163,7 +167,12 @@ export default function LiveNewsRail({ items = [] }) {
                     {item.summary ? <p>{item.summary}</p> : null}
                     <Destination item={item} />
                   </article>
-                ))}
+                )) : (
+                  <div className="liveRailExpandedEmpty">
+                    <strong>Ingen ferske oppdateringer akkurat nå</strong>
+                    <p>Nye, relevante finansnyheter dukker opp her fortløpende.</p>
+                  </div>
+                )}
               </div>
             </div>
           ) : null}
