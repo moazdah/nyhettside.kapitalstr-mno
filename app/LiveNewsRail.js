@@ -109,21 +109,27 @@ export default function LiveNewsRail({ items = [] }) {
 
       {expanded ? (
         <div className="liveRailPanel">
-          <div className="liveRailPanelInner">
-            {items.slice(0, 12).map((item) => (
-              <article
-                className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
-                key={item.id}
-              >
-                <div className="liveRailMeta">
-                  <time>{time(item.tidspunkt)}</time>
-                  {item.seksjon ? <span>{item.seksjon}</span> : null}
-                </div>
-                <h3>{item.headline || item.tekst}</h3>
-                {item.summary ? <p>{item.summary}</p> : null}
-                <Destination item={item} />
-              </article>
-            ))}
+          <div className="liveRailPanelGrid">
+            <div className="liveRailStem" aria-hidden="true">
+              <span />
+            </div>
+            <div className="liveRailPanelInner">
+              {items.slice(0, 12).map((item) => (
+                <article
+                  className={`liveRailCard ${focusedId === item.id ? 'focused' : ''}`}
+                  key={item.id}
+                >
+                  <div className="liveRailMeta">
+                    <time>{time(item.tidspunkt)}</time>
+                    {item.seksjon ? <span>{item.seksjon}</span> : null}
+                  </div>
+                  <h3>{item.headline || item.tekst}</h3>
+                  {item.summary ? <p>{item.summary}</p> : null}
+                  <Destination item={item} />
+                </article>
+              ))}
+            </div>
+            <div className="liveRailPanelEdge" aria-hidden="true" />
           </div>
         </div>
       ) : null}

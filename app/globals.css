@@ -164,3 +164,88 @@
   .frontLeadCopy h1{font-size:38px}
   .frontStoryCard.side .frontStoryImage{aspect-ratio:16/9}
 }
+
+
+/* 2026-09 finance header, market tape and joined live rail */
+.marketTickerBar{height:30px;background:#0B1420;color:#D9E1E8;border-bottom:1px solid rgba(255,255,255,.08);overflow:hidden}
+.marketTickerViewport{height:30px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-inline:contain}
+.marketTickerViewport::-webkit-scrollbar{display:none}
+.marketTickerTrack{display:flex;width:max-content;min-width:100%;height:30px;align-items:center}
+.marketTickerItem{height:30px;display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid rgba(255,255,255,.10);white-space:nowrap;font:500 10.5px 'IBM Plex Mono',monospace}
+.marketTickerItem b{font:600 10.5px 'IBM Plex Sans',sans-serif;color:#F4F7F9}
+.marketTickerItem>span{color:#D7DEE4}
+.marketTickerItem strong{font-weight:600}
+.marketTickerItem .up{color:#41D38A}
+.marketTickerItem .down{color:#FF6B6B}
+.marketTickerItem .flat{color:#AAB6C0}
+
+.siteHeader{position:sticky;top:0;z-index:30;background:#102A43;color:#F7FAFC;border-bottom:1px solid rgba(255,255,255,.12);box-shadow:0 1px 0 rgba(5,18,30,.25)}
+.headerInner{height:60px}
+.logoWrap img{filter:brightness(0) invert(1);opacity:.98}
+.mainNav{height:60px}
+.mainNav a{color:#E8EEF3;font-size:13.5px}
+.mainNav a:hover{color:#fff}
+.headerActions{color:#D4DEE6;font-size:13px}
+.headerActions a:hover{color:#fff}
+.headerActions button{background:#F7FAFC;color:#102A43;border:1px solid rgba(255,255,255,.7);padding:8px 15px}
+.search{color:#fff}
+
+.liveRail{z-index:18;background:#fff;border-bottom:1px solid #D8DDE1;box-shadow:none}
+.liveRailCompact{max-width:1340px;margin:0 auto;padding:0 32px;grid-template-columns:46px minmax(0,1fr) 38px;min-height:50px;height:50px}
+.liveRailPulse{border-right:1px solid #D8DDE1;color:#102A43}
+.liveRailPulse svg{width:24px;height:24px}
+.liveRailToggle{border-left:1px solid #D8DDE1;font-size:18px;color:#102A43}
+.liveRailScroller{height:50px}
+.liveRailTeaser{min-width:230px;max-width:290px;height:50px;padding:7px 14px;gap:2px;border-right:1px solid #D8DDE1}
+.liveRailTeaser strong{font:600 12.5px/1.18 'IBM Plex Sans',sans-serif;-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis}
+.liveRailTeaser span{font:500 9px 'IBM Plex Mono',monospace}
+.liveRail.expanded{border-bottom:1px solid #D8DDE1}
+.liveRailPanel{background:#fff;border-top:1px solid #D8DDE1}
+.liveRailPanelGrid{max-width:1340px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:46px minmax(0,1fr) 38px}
+.liveRailStem{position:relative;border-right:1px solid #D8DDE1;min-height:100%}
+.liveRailStem:before{content:'';position:absolute;left:50%;top:0;bottom:14px;width:1px;background:#B7C2CB;transform:translateX(-50%)}
+.liveRailStem span{position:absolute;left:50%;top:14px;width:7px;height:7px;border-radius:50%;background:#102A43;box-shadow:0 0 0 4px #E8EEF3;transform:translateX(-50%)}
+.liveRailPanelInner{max-width:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:0}
+.liveRailPanelEdge{border-left:1px solid #D8DDE1}
+.liveRailCard{min-height:145px;padding:14px 16px;border-right:1px solid #D8DDE1;border-bottom:1px solid #D8DDE1}
+.liveRailCard:nth-last-child(-n+4){border-bottom:0}
+.liveRailCard h3{font-size:16px;margin:7px 0 6px}
+.liveRailCard p{font-size:12.5px;line-height:1.42;margin-bottom:10px}
+.liveRailCard.focused{box-shadow:inset 0 2px 0 #102A43}
+.liveRailMeta{font-size:9px}
+
+.automationHealthGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 14px}
+.automationHealthGrid .editorialRunStatus{margin:0;min-width:0}
+.editorialRunStatus.error{background:#fff8f7;border-color:#efc4bd}
+.editorialRunStatus.error .editorialRunDot{background:var(--red)}
+.automationNext{margin-top:9px;padding-top:8px;border-top:1px solid #e7e7e7;font-size:11px;color:var(--muted)}
+.automationNext b{font-family:'IBM Plex Mono',monospace;color:var(--navy)}
+.automationPulseError{margin-top:8px;font-size:10.5px;line-height:1.4;color:var(--red);word-break:break-word}
+
+@media(max-width:900px){
+  .headerInner{height:56px;padding:0 18px;gap:18px}
+  .mainNav{height:56px;gap:15px;overflow-x:auto;scrollbar-width:none}
+  .mainNav::-webkit-scrollbar{display:none}
+  .headerActions{gap:10px}
+  .liveRailCompact,.liveRailPanelGrid{padding:0 14px;grid-template-columns:42px minmax(0,1fr) 34px}
+  .liveRailPanelInner{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .liveRailCard:nth-last-child(-n+4){border-bottom:1px solid #D8DDE1}
+  .liveRailCard:nth-last-child(-n+2){border-bottom:0}
+  .automationHealthGrid{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .marketTickerBar,.marketTickerViewport,.marketTickerTrack,.marketTickerItem{height:28px}
+  .marketTickerItem{font-size:9.5px;padding:0 11px}
+  .marketTickerItem b{font-size:9.5px}
+  .headerInner{padding:0 12px}
+  .logoWrap{width:96px}
+  .logoWrap img{width:96px}
+  .mainNav{display:none}
+  .headerActions a[href="/redaksjon"],.headerActions a[href="/redaksjon/login"]{display:none}
+  .liveRailCompact,.liveRailPanelGrid{padding:0;grid-template-columns:40px minmax(0,1fr) 34px}
+  .liveRailCompact,.liveRailScroller,.liveRailTeaser{height:48px;min-height:48px}
+  .liveRailTeaser{min-width:205px;padding:6px 11px}
+  .liveRailPanelInner{grid-template-columns:1fr}
+  .liveRailCard,.liveRailCard:nth-last-child(-n+4),.liveRailCard:nth-last-child(-n+2){border-bottom:1px solid #D8DDE1}
+  .liveRailCard:last-child{border-bottom:0}
+}
