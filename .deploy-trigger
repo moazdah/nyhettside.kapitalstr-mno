@@ -1,3 +1,4 @@
 Kapitalstrom production release
-commit=f366836af706783bcb2eadbadbcfcf450ee604eb
-triggered=2026-09-19T10:49Z
+base=f366836af706783bcb2eadbadbcfcf450ee604eb
+triggered=2026-09-19T10:52Z
+reason=vercel-rate-window-cleared
