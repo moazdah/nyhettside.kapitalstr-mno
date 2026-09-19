@@ -54,5 +54,8 @@ jobs:
           response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=publish&pulseId=$pulse_id")"
           echo "$response" | jq .
 
+          response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=markets&pulseId=$pulse_id")"
+          echo "$response" | jq .
+
           test "$(echo "$response" | jq -r '.stage')" = "done"
           echo "Live-puls ferdig."
