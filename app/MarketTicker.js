@@ -28,9 +28,9 @@ export default function MarketTicker({ markets = [] }) {
       if (paused) return;
       const half = el.scrollWidth / 2;
       if (half <= el.clientWidth) return;
-      el.scrollLeft += 0.55;
+      el.scrollLeft += 1.15;
       if (el.scrollLeft >= half) el.scrollLeft -= half;
-    }, 30);
+    }, 24);
 
     return () => clearInterval(timer);
   }, [paused, markets.length]);
@@ -38,7 +38,7 @@ export default function MarketTicker({ markets = [] }) {
   function pauseTemporarily() {
     setPaused(true);
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    resumeTimer.current = setTimeout(() => setPaused(false), 7000);
+    resumeTimer.current = setTimeout(() => setPaused(false), 4500);
   }
 
   if (!markets.length) return null;
@@ -49,8 +49,6 @@ export default function MarketTicker({ markets = [] }) {
       <div
         className="marketTickerViewport"
         ref={viewport}
-        onPointerEnter={() => setPaused(true)}
-        onPointerLeave={() => setPaused(false)}
         onPointerDown={pauseTemporarily}
         onTouchStart={pauseTemporarily}
         onWheel={pauseTemporarily}
