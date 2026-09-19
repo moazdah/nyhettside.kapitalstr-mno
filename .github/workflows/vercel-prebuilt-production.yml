@@ -1,0 +1,61 @@
+name: Deploy production prebuilt
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vercel-prebuilt-production.yml'
+
+concurrency:
+  group: kapitalstrom-vercel-prebuilt-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: team_RbPY2JdK0IeLUf78YlfJUaxg
+      VERCEL_PROJECT_ID: prj_dt9X67WnEvEROT1WntALIWd5I68T
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Verify Vercel token is configured
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Missing GitHub repository secret VERCEL_TOKEN"
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull production environment
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build production locally in GitHub
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy prebuilt output to production
+        run: |
+          DEPLOYMENT_URL="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "Deployment URL: $DEPLOYMENT_URL"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+        id: deploy
+
+      - name: Verify production deployment
+        run: |
+          URL="${{ steps.deploy.outputs.deployment_url }}"
+          test -n "$URL"
+          curl --fail --silent --show-error --retry 3 --retry-delay 3 "$URL/api/health" || true
+          echo "Production deployment uploaded: $URL"
