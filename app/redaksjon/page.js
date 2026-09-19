@@ -122,8 +122,14 @@ function Published({ items }) {
 }
 
 function Feed({ items }) {
-  if (!items.length) return <Empty>Ingen siste nytt-meldinger.</Empty>;
-  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Tid</th><th>Melding</th><th>Seksjon</th><th>Status</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}><td>{clockTime(i.tidspunkt)}</td><td><b>{i.tekst}</b></td><td>{i.seksjon || '—'}</td><td>{i.status}</td></tr>)}</tbody></table></div>;
+  if (!items.length) return <Empty>Ingen korte nyhetsoppdateringer.</Empty>;
+  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Tid</th><th>Oppdatering</th><th>Seksjon</th><th>Status</th><th>Kilde</th></tr></thead><tbody>{items.map((i) => <tr key={i.id}>
+    <td>{clockTime(i.tidspunkt)}</td>
+    <td><b>{i.headline || i.tekst}</b>{i.summary ? <small>{i.summary}</small> : null}</td>
+    <td>{i.seksjon || '—'}</td>
+    <td>{i.status}{i.generated_by ? <small>{i.generated_by}</small> : null}</td>
+    <td>{i.source_url ? <a href={i.source_url} target="_blank" rel="noreferrer">{i.source_name || 'Kilde ↗'}</a> : '—'}</td>
+  </tr>)}</tbody></table></div>;
 }
 
 function RawItems({ items }) {
