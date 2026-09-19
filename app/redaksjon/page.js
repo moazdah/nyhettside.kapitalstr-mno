@@ -118,7 +118,10 @@ function FrontPage({ items }) {
 
 function Published({ items }) {
   if (!items.length) return <Empty>Ingen publiserte saker.</Empty>;
-  return <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Sak</th><th>Seksjon</th><th>Publisert</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}><td><Link href={`/artikkel/${a.slug}`}><b>{a.tittel}</b></Link></td><td>{a.seksjon}</td><td>{fullDate(a.publisert_at)}</td><td><form action={archiveAction}><input type="hidden" name="id" value={a.id}/><AdminSubmitButton className="secondary" pendingText="Arkiverer …">Arkiver</AdminSubmitButton></form></td></tr>)}</tbody></table></div>;
+  return <>
+    <div className="sourceToolbar"><div><b>Offentlig arkiv</b><small>«Arkiver» fjerner saken fra forsiden, men beholder artikkel-URL-en offentlig og søkbar.</small></div></div>
+    <div className="adminTableWrap"><table className="adminTable"><thead><tr><th>Sak</th><th>Seksjon</th><th>Publisert</th><th></th></tr></thead><tbody>{items.map((a) => <tr key={a.id}><td><Link href={`/artikkel/${a.slug}`}><b>{a.tittel}</b></Link></td><td>{a.seksjon}</td><td>{fullDate(a.publisert_at)}</td><td><form action={archiveAction}><input type="hidden" name="id" value={a.id}/><AdminSubmitButton className="secondary" pendingText="Arkiverer …">Fjern fra forsiden</AdminSubmitButton></form></td></tr>)}</tbody></table></div>
+  </>;
 }
 
 function Feed({ items }) {

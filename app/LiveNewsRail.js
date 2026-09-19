@@ -6,11 +6,33 @@ import { useState } from 'react';
 function time(value) {
   if (!value) return '';
   try {
-    return new Intl.DateTimeFormat('nb-NO', {
+    const date = new Date(value);
+    const now = new Date();
+    const dateKey = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Oslo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const clock = new Intl.DateTimeFormat('nb-NO', {
       timeZone: 'Europe/Oslo',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(value));
+    }).format(date);
+
+    const currentKey = dateKey.format(now);
+    const itemKey = dateKey.format(date);
+    if (itemKey === currentKey) return clock;
+
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    if (itemKey === dateKey.format(yesterday)) return `i går ${clock}`;
+
+    const day = new Intl.DateTimeFormat('nb-NO', {
+      timeZone: 'Europe/Oslo',
+      day: 'numeric',
+      month: 'short',
+    }).format(date);
+    return `${day} ${clock}`;
   } catch {
     return '';
   }

@@ -17,7 +17,7 @@ export async function GET() {
   const articles = await sql`
     SELECT slug, COALESCE(publisert_at, created_at) AS changed_at
     FROM articles
-    WHERE status = 'live'
+    WHERE status IN ('live', 'arkivert')
     ORDER BY COALESCE(publisert_at, created_at) DESC
     LIMIT 5000
   `;
