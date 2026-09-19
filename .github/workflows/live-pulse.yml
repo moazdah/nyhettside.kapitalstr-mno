@@ -2,8 +2,10 @@ name: Kapitalstrøm live-puls
 
 on:
   schedule:
-    # Lightweight check every five minutes, offset from the top of the hour. Route enforces 06-23 Europe/Oslo.
-    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 4-22 * * *'
+    # GitHub's high-frequency scheduler can be delayed or drop individual wake-ups.
+    # Wake twice per hour and keep the runner alive for six five-minute pulses.
+    # The route itself enforces 06-23 Europe/Oslo.
+    - cron: '2,32 4-22 * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -17,7 +19,7 @@ concurrency:
 jobs:
   live-pulse:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 40
     steps:
       - name: Refresh live news rail and market ticker
         env:
@@ -27,6 +29,11 @@ jobs:
           set -euo pipefail
           test -n "$CRON_SECRET"
 
+          loops=1
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            loops=6
+          fi
+
           call_step() {
             curl --fail --silent --show-error \
               --retry 2 --retry-all-errors --retry-delay 4 \
@@ -35,27 +42,45 @@ jobs:
               "$1"
           }
 
-          echo "Starter Kapitalstrøm live-puls …"
-          response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=start")"
-          echo "$response" | jq .
+          for pulse in $(seq 1 "$loops"); do
+            cycle_started="$(date +%s)"
+            echo "Live-puls $pulse/$loops starter …"
 
-          if [ "$(echo "$response" | jq -r '.skipped // false')" = "true" ]; then
-            echo "Live-puls hoppet over: $(echo "$response" | jq -r '.reason // "skipped"')"
-            exit 0
-          fi
+            response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=start")"
+            echo "$response" | jq .
 
-          pulse_id="$(echo "$response" | jq -r '.pulseId')"
-          test "$pulse_id" != "null"
-          test -n "$pulse_id"
+            skipped="$(echo "$response" | jq -r '.skipped // false')"
+            if [ "$skipped" = "true" ]; then
+              reason="$(echo "$response" | jq -r '.reason // "skipped"')"
+              echo "Live-puls hoppet over: $reason"
 
-          response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=score&pulseId=$pulse_id")"
-          echo "$response" | jq .
+              if [ "$reason" = "automation_disabled" ] || [ "$reason" = "outside_editorial_hours" ]; then
+                exit 0
+              fi
+            else
+              pulse_id="$(echo "$response" | jq -r '.pulseId')"
+              test "$pulse_id" != "null"
+              test -n "$pulse_id"
 
-          response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=publish&pulseId=$pulse_id")"
-          echo "$response" | jq .
+              response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=score&pulseId=$pulse_id")"
+              echo "$response" | jq .
 
-          response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=markets&pulseId=$pulse_id")"
-          echo "$response" | jq .
+              response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=publish&pulseId=$pulse_id")"
+              echo "$response" | jq .
 
-          test "$(echo "$response" | jq -r '.stage')" = "done"
-          echo "Live-puls ferdig."
+              response="$(call_step "$BASE_URL/api/cron/live-pulse?stage=markets&pulseId=$pulse_id")"
+              echo "$response" | jq .
+
+              test "$(echo "$response" | jq -r '.stage')" = "done"
+              echo "Live-puls $pulse/$loops ferdig."
+            fi
+
+            if [ "$pulse" -lt "$loops" ]; then
+              elapsed="$(( $(date +%s) - cycle_started ))"
+              wait="$(( 300 - elapsed ))"
+              if [ "$wait" -gt 0 ]; then
+                echo "Venter $wait sekunder til neste femminutterskontroll …"
+                sleep "$wait"
+              fi
+            fi
+          done

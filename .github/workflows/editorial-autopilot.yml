@@ -2,10 +2,9 @@ name: Kapitalstrøm redaksjonsautopilot
 
 on:
   schedule:
-    # Covers hourly newsroom runs from 06-23 Europe/Oslo in both CET and CEST.
-    # Redundant wake-ups reduce the risk of a missed GitHub schedule.
-    # The endpoint is idempotent per Oslo hour, so only one full round is processed.
-    - cron: '7,22,37,52 4-22 * * *'
+    # Two wake-ups per hour. The endpoint is idempotent per Oslo hour,
+    # so the second wake-up is a safety net rather than a duplicate round.
+    - cron: '11,41 4-22 * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -30,7 +29,11 @@ jobs:
           test -n "$CRON_SECRET"
 
           call_step() {
-            curl --fail --silent --show-error               --retry 3 --retry-all-errors --retry-delay 5               --max-time 290               -H "Authorization: Bearer $CRON_SECRET"               "$1"
+            curl --fail --silent --show-error \
+              --retry 3 --retry-all-errors --retry-delay 5 \
+              --max-time 290 \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$1"
           }
 
           echo "Starter Kapitalstrøm redaksjonsrunde …"
