@@ -79,7 +79,8 @@ function pulseStage(pulse) {
   if (pulse.status === 'done') return 'Live-puls ferdig';
   if (pulse.stage === 'discover') return 'Henter ferske nyheter';
   if (pulse.stage === 'score') return 'AI vurderer nye kandidater';
-  if (pulse.stage === 'publish') return 'Oppdaterer nyhetsstripe og markedstall';
+  if (pulse.stage === 'publish') return 'Oppdaterer nyhetsstripen';
+  if (pulse.stage === 'markets') return 'Oppdaterer markedstall';
   return 'Live-puls jobber';
 }
 
