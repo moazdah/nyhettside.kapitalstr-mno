@@ -400,3 +400,190 @@
   .liveRailEmpty{min-width:260px;padding:0 11px}
   .liveRailEmpty span{display:none}
 }
+
+
+/* Single expandable live-news roll — same cards collapsed and expanded */
+.liveRailDrawer{
+  width:100%;
+  background:#fff;
+  border-top:1px solid #d9dee3;
+  border-bottom:1px solid #d9dee3;
+  overflow:hidden;
+}
+.liveRailDrawerGrid{
+  width:100%;
+  display:grid;
+  grid-template-columns:60px minmax(0,1fr) 44px;
+  align-items:stretch;
+  background:#fff;
+}
+.liveRailDrawer .liveRailPulse{
+  width:60px;
+  min-height:52px;
+  height:auto;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:14px 0 0;
+  border:0;
+  border-right:1px solid #d9dee3;
+  background:#fff;
+  color:#102A43;
+  cursor:pointer;
+}
+.liveRailDrawer .liveRailPulse svg{
+  width:23px;
+  height:23px;
+  flex:none;
+}
+.liveRailStoryViewport{
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:pan-y;
+}
+.liveRailStoryViewport::-webkit-scrollbar{display:none}
+.liveRailStoryViewport.dragging{cursor:grabbing}
+.liveRailStoryTrack{
+  display:flex;
+  align-items:stretch;
+  width:max-content;
+  min-width:100%;
+}
+.liveRailStory{
+  flex:0 0 300px;
+  width:300px;
+  height:52px;
+  overflow:hidden;
+  background:#fff;
+  border-right:1px solid #d9dee3;
+  transition:height .22s ease;
+  cursor:pointer;
+}
+.liveRailStoryHead{
+  height:52px;
+  box-sizing:border-box;
+  padding:8px 14px 7px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:3px;
+}
+.liveRailStoryHead h3{
+  margin:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font:600 12.5px/1.16 'IBM Plex Sans',sans-serif;
+  color:#18222c;
+}
+.liveRailStoryMeta{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  font:500 9px/1 'IBM Plex Mono',monospace;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  color:#697681;
+}
+.liveRailStoryMeta span{
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.liveRailStoryBody{
+  box-sizing:border-box;
+  min-height:0;
+  max-height:0;
+  overflow:hidden;
+  padding:0 14px;
+  opacity:0;
+  border-top:0 solid transparent;
+  transition:max-height .22s ease, opacity .16s ease, padding .22s ease, border-color .22s ease;
+}
+.liveRailStoryBody p{
+  margin:0 0 18px;
+  font-size:13.5px;
+  line-height:1.5;
+  color:#505b64;
+}
+.liveRailStoryBody .liveRailLink{
+  display:inline-flex;
+  align-items:center;
+  min-height:30px;
+  padding:0 13px;
+  border:1px solid #cbd5dc;
+  border-radius:999px;
+  color:#102A43;
+  font-size:11px;
+  font-weight:600;
+  text-decoration:none;
+  background:#fff;
+}
+.liveRailDrawer.expanded .liveRailStory{
+  height:300px;
+}
+.liveRailDrawer.expanded .liveRailStoryHead{
+  height:auto;
+  min-height:78px;
+  padding-top:14px;
+  padding-bottom:11px;
+}
+.liveRailDrawer.expanded .liveRailStoryHead h3{
+  white-space:normal;
+  text-overflow:clip;
+  font-size:16px;
+  line-height:1.15;
+}
+.liveRailDrawer.expanded .liveRailStoryBody{
+  max-height:220px;
+  padding:14px 14px 18px;
+  opacity:1;
+  border-top:1px solid #eef1f3;
+}
+.liveRailDrawerToggle{
+  width:44px;
+  min-height:52px;
+  height:auto;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:15px 0 0;
+  border:0;
+  border-left:1px solid #d9dee3;
+  background:#fff;
+  color:#102A43;
+  cursor:pointer;
+  font-size:17px;
+}
+.liveRailDrawerToggle:hover,
+.liveRailDrawer .liveRailPulse:hover{
+  background:#f7f8f9;
+}
+.liveRailDrawer.expanded .liveRailPulse,
+.liveRailDrawer.expanded .liveRailDrawerToggle{
+  min-height:300px;
+}
+.liveRailDrawer.expanded .liveRailDrawerToggle span{
+  transform:translateY(1px);
+}
+@media(max-width:900px){
+  .liveRailDrawerGrid{grid-template-columns:50px minmax(0,1fr) 40px}
+  .liveRailDrawer .liveRailPulse{width:50px}
+  .liveRailDrawerToggle{width:40px}
+  .liveRailStory{flex-basis:280px;width:280px}
+}
+@media(max-width:650px){
+  .liveRailDrawerGrid{grid-template-columns:44px minmax(0,1fr) 38px}
+  .liveRailDrawer .liveRailPulse{width:44px}
+  .liveRailDrawerToggle{width:38px}
+  .liveRailStory{flex-basis:240px;width:240px}
+  .liveRailDrawer.expanded .liveRailStory{height:270px}
+  .liveRailDrawer.expanded .liveRailPulse,
+  .liveRailDrawer.expanded .liveRailDrawerToggle{min-height:270px}
+}
