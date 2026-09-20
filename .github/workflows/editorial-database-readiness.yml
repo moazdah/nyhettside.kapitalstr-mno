@@ -31,4 +31,5 @@ jobs:
           VERCEL_PROJECT_ID: prj_dt9X67WnEvEROT1WntALIWd5I68T
           VERCEL_TEAM_ID: team_RbPY2JdK0IeLUf78YlfJUaxg
           EDITORIAL_BRANCH: codex/redaksjon-sammenheng
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
         run: node scripts/database-readiness.mjs

@@ -35,6 +35,9 @@ async function environment(target) {
     deepseekConfigured: Boolean(choose('DEEPSEEK_API_KEY')),
     databaseBranchOverride: Boolean(selected?.gitBranch) };
   if (!selected) return { metadata, connection: null };
+  if (selected.type === 'sensitive' || selected.visibility === 'secret') {
+    return { metadata: { ...metadata, credentialUnavailable: 'VERCEL_WRITE_ONLY' }, connection: null };
+  }
   stage = `database_credential_${target}`;
   const secret = await vercel(`/v1/projects/${project}/env/${selected.id}`);
   // Whitelist diagnostic fields; never log values, hints, URLs or provider errors.
@@ -50,7 +53,7 @@ async function environment(target) {
   if (typeof connection !== 'string' || !/^postgres(?:ql)?:\/\//.test(connection)) {
     const error = new Error('Database connection could not be retrieved');
     error.code = 'DATABASE_CREDENTIAL_NOT_RETRIEVABLE';
-    throw error;
+    return { metadata: { ...metadata, credentialUnavailable: error.code }, connection: null };
   }
   return { metadata, connection };
 }
@@ -75,12 +78,23 @@ try {
   if (!token || !project || !team || !branch) throw Object.assign(new Error('Required configuration missing'), { code: 'CONFIGURATION_MISSING' });
   const report = {};
   for (const target of ['production','preview']) {
-    const env = await environment(target);
-    report[target] = { ...env.metadata, ...(env.connection ? await inspect(target, env.connection) : {}) };
+    try {
+      const env = await environment(target);
+      report[target] = { ...env.metadata, ...(env.connection ? await inspect(target, env.connection) : {}) };
+    } catch (error) {
+      report[target] = { connected: false, stage,
+        code: /^[A-Z0-9_]{1,64}$/.test(String(error.code || '')) ? error.code : 'REQUEST_FAILED' };
+    }
+  }
+  // Explicitly supplied by the repository owner; no Vercel visibility changes.
+  if (process.env.EDITORIAL_TEST_DATABASE_URL_UNPOOLED) {
+    report.test = await inspect('test', process.env.EDITORIAL_TEST_DATABASE_URL_UNPOOLED);
   }
   report.separatePreviewEndpoint = Boolean(report.production.endpointFingerprint && report.preview.endpointFingerprint
     && report.production.endpointFingerprint !== report.preview.endpointFingerprint);
-  console.log(JSON.stringify({ ok: true, readOnly: true, ...report }, null, 2));
+  const ok = Boolean(report.production.connected && (report.preview.connected || report.test?.connected));
+  console.log(JSON.stringify({ ok, readOnly: true, ...report }, null, 2));
+  if (!ok) process.exitCode = 1;
 } catch (error) {
   // Provider exceptions can embed URLs. Emit only controlled stage and code.
   const code = /^[A-Z0-9_]{1,64}$/.test(String(error.code || '')) ? error.code : 'REQUEST_FAILED';

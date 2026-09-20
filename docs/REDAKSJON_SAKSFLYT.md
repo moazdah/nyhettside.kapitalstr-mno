@@ -149,6 +149,24 @@ Gjenværende grenser:
 
 ## Utgangspunkt og produksjonsstatus
 
+### Lesekontroll før aktivering
+
+Workflowen `Editorial database readiness (read only)` undersøker tilgjengelige
+Production- og Preview-forbindelser med eksplisitte read-only-transaksjoner.
+Vercel-variabler merket `sensitive` / `secret` kan ikke hentes ut, og kontrollen
+endrer ikke denne beskyttelsen. Den installerte Neon-koblingen svarte fortsatt
+`Tool list_projects not found` ved kontroll 20. september 2026.
+
+En alternativ testforbindelse kan legges i GitHub Actions-secret
+`EDITORIAL_TEST_DATABASE_URL_UNPOOLED` på dette repoet. Bruk direkte URL fra
+én separat Neon-testgren med kopi av dagens skjema. Ikke legg URL-en i kode,
+PR eller chat. Kjør kontrolljobben på `codex/redaksjon-sammenheng` på nytt
+etter at secret er lagt inn. Rapporten viser `test.connected` ved vellykket
+testtilkobling; samlet `ok` forblir false hvis Production ikke er undersøkt.
+Dette er kun lesekontroll: jobben migrerer ikke, publiserer ikke artikler og
+gjør ingen DeepSeek-kall. En grønn kontroll erstatter ikke migrasjons- og
+flyttestene i aktiveringsplanen over.
+
 Implementasjonen startet fra `main` på
 `3f9c823e82271b7ef444108fd5cce5b50a8bbfc2`, som også ble bekreftet som Vercel
 Production ved oppstart. Denne leveransen er et separat endringsforslag.
