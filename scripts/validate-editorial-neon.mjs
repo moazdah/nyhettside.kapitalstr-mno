@@ -17,6 +17,9 @@ function fingerprint(connection) {
 try {
   const testUrl = process.env.EDITORIAL_TEST_DATABASE_URL_UNPOOLED;
   const prodUrl = process.env.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED;
+  log({stage, testConfigured:Boolean(testUrl), productionConfigured:Boolean(prodUrl), deepseekConfigured:Boolean(process.env.DEEPSEEK_API_KEY),
+    testPooled:testUrl ? new URL(testUrl).hostname.includes('-pooler.') : null,
+    productionPooled:prodUrl ? new URL(prodUrl).hostname.includes('-pooler.') : null});
   assert.ok(testUrl && prodUrl && process.env.DEEPSEEK_API_KEY, 'REQUIRED_SECRET_MISSING');
   assert.equal(fingerprint(testUrl), '1c0147c77e07b78e', 'UNEXPECTED_TEST_ENDPOINT');
   assert.notEqual(fingerprint(testUrl), fingerprint(prodUrl), 'TEST_POINTS_TO_PRODUCTION');
@@ -85,6 +88,7 @@ try {
 } catch(error) {
   // Never emit arbitrary provider exceptions, which may contain credentials.
   const safeCode=/^[A-Z0-9_]{1,64}$/.test(String(error.code||''))?error.code:'VALIDATION_FAILED';
-  log({ok:false,stage,code:safeCode,kind:error.name});
+  const reason = /^[A-Z_]{1,64}$/.test(String(error.message||'')) ? error.message : undefined;
+  log({ok:false,stage,code:safeCode,kind:error.name,reason});
   process.exitCode=1;
 }
