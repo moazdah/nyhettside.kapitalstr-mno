@@ -125,6 +125,10 @@ test('Retry budget is bounded and manual override cannot steal an active lease',
     await sql`UPDATE editorial_cases SET retry_after=now()-interval '1 second' WHERE id=${claim.id}`;
   }
   await assert.rejects(claimCase(sql,f.editorialCase,'research'),error=>error.code==='CASE_NOT_CLAIMABLE');
+  // An explicit rebuild can repair a later failed step as well. It still
+  // cannot steal an active lease, as asserted above, or replace a live story.
+  await sql`UPDATE editorial_cases SET step='verify' WHERE id=${f.editorialCase.id}`;
+  assert.equal((await claimCase(sql,f.editorialCase,'research',{force:true})).claimedStep,'research');
 });
 
 test('Automatic publishing defaults to review; manual review can publish exactly once', async () => {
