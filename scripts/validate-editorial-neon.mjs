@@ -9,14 +9,22 @@ import { sourceRoleFromUrl } from '../lib/editorial/source-policy.mjs';
 import { application } from './editorial-runtime.mjs';
 let stage = 'configuration';
 const log = data => console.log(JSON.stringify(data));
+function directConnection(value) {
+  if (!value) return value;
+  const url = new URL(value);
+  assert.ok(url.hostname.endsWith('.neon.tech'), 'EXPECTED_NEON_ENDPOINT');
+  // Neon uses the same branch credentials for direct and pooled endpoints.
+  url.hostname = url.hostname.replace('-pooler.', '.');
+  return url.toString();
+}
 function fingerprint(connection) {
   const url = new URL(connection);
   assert.equal(url.hostname.includes('-pooler.'), false, 'DIRECT_CONNECTION_REQUIRED');
   return createHash('sha256').update(url.hostname).digest('hex').slice(0,16);
 }
 try {
-  const testUrl = process.env.EDITORIAL_TEST_DATABASE_URL_UNPOOLED;
-  const prodUrl = process.env.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED;
+  const testUrl = directConnection(process.env.EDITORIAL_TEST_DATABASE_URL_UNPOOLED);
+  const prodUrl = directConnection(process.env.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED);
   log({stage, testConfigured:Boolean(testUrl), productionConfigured:Boolean(prodUrl), deepseekConfigured:Boolean(process.env.DEEPSEEK_API_KEY),
     testPooled:testUrl ? new URL(testUrl).hostname.includes('-pooler.') : null,
     productionPooled:prodUrl ? new URL(prodUrl).hostname.includes('-pooler.') : null});
