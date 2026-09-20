@@ -195,13 +195,14 @@ export default async function RedaksjonPage({ searchParams }) {
           {active === 'kilder' && <Sources items={data.sources} policyRate={data.policyRate} rawItems={data.rawItems}/>} 
         </section>
         <aside className="adminAside">
+          <div className="adminNote"><b>Saksflyt</b><p>Følg utvelgelse, kildebevis, utkast og stoppårsaker i samme sak.</p><Link href="/redaksjon/saker">Åpne saksoversikten →</Link><p>{process.env.EDITORIAL_AUTOPUBLISH_V1 === 'true' ? 'Ny publiseringskontroll er aktiv.' : 'Ny motor er i gjennomgangsmodus og lager utkast.'}</p></div>
           <div className="adminStat"><span>Utkast i kø</span><strong>{data.queue.length}</strong></div>
           <div className="adminStat"><span>Radar-treff</span><strong>{data.radarItems.length}</strong></div>
           <div className="adminStat"><span>Publisert</span><strong>{data.published.length}</strong></div>
           <div className="adminStat"><span>Aktive kilder</span><strong>{data.sources.filter((s) => s.aktiv).length}</strong></div>
           <div className="adminUsage"><div className="sectionKicker">AI-forbruk i dag</div><strong>${usageCost.toFixed(4)}</strong>{data.usage.length ? data.usage.map((row) => <p key={`${row.steg}-${row.modell}`}><span>{row.steg}</span><span>{row.tokens_inn + row.tokens_ut} tokens</span></p>) : <p>Ingen AI-kall ennå.</p>}</div>
           <div className="adminNote"><b>Kildejournal</b><p>Nyhetsradaren lagrer hvor et tips først ble oppdaget. Systemet foretrekker original/offisiell kilde, men én etablert nyhetskilde kan være nok for et utkast. Eksklusive opplysninger, råd og sitater krediteres tydelig.</p></div>
-          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten filtrerer og dedupliserer lokalt før AI: råtreff → maks ca. 45 unike kandidater → AI-rangering → opptil 3 sterke saker → research → ferdig artikkel. Publiseringsbryteren avgjør om saken går direkte ut eller havner i køen.</p></div>
+          <div className="adminNote"><b>AI-flyt</b><p>Autopiloten filtrerer og dedupliserer før AI-rangering. Utvalgte hendelser får dokumenterte fakta, lagret utkast og en separat kontroll. En runde kan gi null artikler. Ny artikkelflyt starter i gjennomgangsmodus; automatisk publisering krever både aktivert publiseringskontroll og publiseringsbryteren.</p></div>
           <div className="adminNote"><b>Rentevakt</b><p>Styringsrenten overvåkes mot Norges Banks offisielle publisering og API. En endring lager et kontrollert utkast i køen. Den automatiske rentevakten kjører via GitHub Actions.</p></div>
         </aside>
       </div>
