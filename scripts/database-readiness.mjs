@@ -37,6 +37,15 @@ async function environment(target) {
   if (!selected) return { metadata, connection: null };
   stage = `database_credential_${target}`;
   const secret = await vercel(`/v1/projects/${project}/env/${selected.id}`);
+  // Whitelist diagnostic fields; never log values, hints, URLs or provider errors.
+  console.log(JSON.stringify({ target, credentialMetadata: {
+    type: ['encrypted', 'plain', 'secret', 'sensitive', 'system'].includes(secret.type) ? secret.type : 'unknown',
+    visibility: ['config', 'secret'].includes(secret.visibility) ? secret.visibility : 'unspecified',
+    decrypted: secret.decrypted === true,
+    hasValue: typeof secret.value === 'string',
+    hasNestedValue: typeof secret.env?.value === 'string',
+    hasLegacyValue: typeof secret.legacyValue === 'string',
+  } }));
   const connection = secret.value;
   if (typeof connection !== 'string' || !/^postgres(?:ql)?:\/\//.test(connection)) {
     const error = new Error('Database connection could not be retrieved');
