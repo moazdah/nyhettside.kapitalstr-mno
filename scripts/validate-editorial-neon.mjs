@@ -9,6 +9,11 @@ import { sourceRoleFromUrl } from '../lib/editorial/source-policy.mjs';
 import { application } from './editorial-runtime.mjs';
 let stage = 'configuration';
 const log = data => console.log(JSON.stringify(data));
+function safeMessage(error) {
+  let text=String(error?.message || error || '');
+  for (const value of Object.values(process.env).filter(v=>v && v.length>12)) text=text.replaceAll(value,'[REDACTED]');
+  return text.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/gi,'[URL]').replace(/sk-[\w-]+/g,'[KEY]').slice(0,350);
+}
 function directConnection(value) {
   if (!value) return value;
   const url = new URL(value);
@@ -77,8 +82,14 @@ try {
   const research=await app.load('lib/research/fact-pack.js');
   const candidates=await sql`SELECT * FROM radar_items WHERE url IS NOT NULL ORDER BY published_at DESC NULLS LAST,discovered_at DESC LIMIT 100`;
   const selected=candidates.filter(x=>assessAudience(x).eligible && sourceRoleFromUrl(x.primary_source_url||x.url,x).role!=='unknown').slice(0,8);
-  let drafts=0, rejected=0;
+  let drafts=0, rejected=0, errors=0;
   for (const candidate of selected) {
+    const existing=await getCase(sql,candidate.id);
+    if(existing?.state==='failed') log({stage:'previous_failure',radarId:candidate.id,step:existing.step,error:safeMessage(existing.last_error)});
+    if(existing?.retry_after && new Date(existing.retry_after)>new Date()) {
+      log({stage:'retry_wait',radarId:candidate.id}); continue;
+    }
+    try {
     const result=await research.buildFactPackForRadarItem(candidate.id);
     log({stage,radarId:candidate.id,title:candidate.title,...result});
     if(result.canWrite && drafts<2) {
@@ -90,15 +101,19 @@ try {
       drafts++;
       stage='real_research';
     } else rejected++;
+    } catch(error) {
+      errors++;
+      log({stage,radarId:candidate.id,error:safeMessage(error)});
+      stage='real_research';
+    }
   }
-  log({stage:'complete',ok:true,candidates:selected.length,drafts,rejected,autopublish:false,
+  log({stage:'complete',ok:errors===0,candidates:selected.length,drafts,rejected,errors,autopublish:false,
     limitation:drafts?'Real drafts require editorial review.':'No eligible document yielded a draft; full real-source flow remains unverified.'});
+  if(errors) process.exitCode=1;
 } catch(error) {
   // Never emit arbitrary provider exceptions, which may contain credentials.
   const safeCode=/^[A-Z0-9_]{1,64}$/.test(String(error.code||''))?error.code:'VALIDATION_FAILED';
-  let reason = String(error.message || 'Unknown validation error');
-  for (const value of Object.values(process.env).filter(v=>v && v.length>12)) reason=reason.replaceAll(value,'[REDACTED]');
-  reason=reason.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/gi,'[URL]').replace(/sk-[\w-]+/g,'[KEY]').slice(0,350);
+  const reason = safeMessage(error);
   log({ok:false,stage,code:safeCode,kind:error.name,reason});
   process.exitCode=1;
 }

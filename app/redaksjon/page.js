@@ -176,12 +176,14 @@ export default async function RedaksjonPage({ searchParams }) {
   const active = tabs.some(([key]) => key === params?.tab) ? params.tab : 'ko';
   const data = await getAdminData();
   const usageCost = data.usage.reduce((sum, row) => sum + Number(row.kostnad_usd || 0), 0);
+  const version = process.env.VERCEL_GIT_COMMIT_SHA || process.env.APP_COMMIT_SHA;
+  const environment = process.env.VERCEL_ENV === 'production' ? 'Produksjon' : process.env.VERCEL_ENV === 'preview' ? 'Testmiljø' : 'Lokalt';
 
   return (
     <main className="adminShell">
       <header className="adminHeader">
         <Link href="/" className="adminBrand"><img src="/kapitalstrom-logo.png" alt="Kapitalstrøm"/><span>Redaksjon</span></Link>
-        <div className="adminHeaderRight"><span>Produksjon</span><form action={logoutAction}><AdminSubmitButton className="secondary" pendingText="Logger ut …">Logg ut</AdminSubmitButton></form></div>
+        <div className="adminHeaderRight"><span>{environment}{version ? ` · ${version.slice(0, 7)}` : ''}</span><form action={logoutAction}><AdminSubmitButton className="secondary" pendingText="Logger ut …">Logg ut</AdminSubmitButton></form></div>
       </header>
       <TabNav active={active}/>
       <div className="adminContentGrid">
