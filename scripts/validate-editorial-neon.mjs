@@ -96,7 +96,9 @@ try {
 } catch(error) {
   // Never emit arbitrary provider exceptions, which may contain credentials.
   const safeCode=/^[A-Z0-9_]{1,64}$/.test(String(error.code||''))?error.code:'VALIDATION_FAILED';
-  const reason = /^[A-Z_]{1,64}$/.test(String(error.message||'')) ? error.message : undefined;
+  let reason = String(error.message || 'Unknown validation error');
+  for (const value of Object.values(process.env).filter(v=>v && v.length>12)) reason=reason.replaceAll(value,'[REDACTED]');
+  reason=reason.replace(/(?:postgres(?:ql)?|https?):\/\/[^\s'"<>]+/gi,'[URL]').replace(/sk-[\w-]+/g,'[KEY]').slice(0,350);
   log({ok:false,stage,code:safeCode,kind:error.name,reason});
   process.exitCode=1;
 }

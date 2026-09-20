@@ -29,3 +29,9 @@ jobs:
           EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: node --experimental-vm-modules scripts/validate-editorial-neon.mjs
+      - name: Configure the existing preview branch for review mode
+        env:
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: node scripts/configure-editorial-preview.mjs
