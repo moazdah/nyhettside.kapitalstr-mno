@@ -78,7 +78,7 @@ try {
   log({stage,ok:true,usage:response.usage});
   stage='fresh_discovery';
   const radarEngine=await app.load('lib/radar/news-radar.js');
-  const discovered=await radarEngine.runNewsRadar();
+  const discovered=await radarEngine.runNewsRadar({ liveOnly: true });
   log({stage,seen:discovered.seen,inserted:discovered.inserted,sourceErrors:discovered.errors.map(safeMessage)});
   stage='real_research';
   const writer=await app.load('lib/ai/write-article.js');
