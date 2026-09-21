@@ -126,8 +126,28 @@ omskriving, migrasjonsfeil og avslutning av riktig runde.
 
 PGlite har én databaseforbindelse. Testene erstatter derfor **ikke** en
 test av Neon HTTP-driveren, flere samtidige forbindelser eller virkelige
-nettverksavbrudd. Direkte Neon-tilgang var utilgjengelig under implementeringen,
-og ingen produksjonsmigrasjon eller reelle DeepSeek-kall ble utført.
+nettverksavbrudd. Disse kontrollene ble supplert med ekte Neon- og DeepSeek-kjøring 21. september
+2026 (GitHub Actions-kjøring `35582122124`, commit `de3e5bb`):
+
+- Migrasjonen ble kjørt samtidig fra to klienter og registrert nøyaktig én gang.
+- To arbeidere konkurrerte om samme sak; bare én fikk låsen. En utløpt arbeider
+  ble nektet lagring etter at en ny arbeider overtok.
+- Ekte discovery, dokumenthenting og DeepSeek-research produserte en faktapakke
+  med ti fakta. Artikkelutkastet ble lagret i testdatabasen før separat kontroll.
+- Kontrolløren avviste to tekstblokker uten tilstrekkelig støtte. Utkastet ble
+  beholdt for gjennomgang og kunne ikke publiseres. Tre andre kandidater ble
+  stoppet før skriving. Ingen tekniske feil i den fullførte kjøringen.
+- 69 automatiske tester og Next.js-produksjonsbygg bestod.
+
+Dette dokumenterer teknisk sammenheng, **ikke** tilfredsstillende redaksjonell
+kvalitet eller stabil drift over flere døgn. Det ene utkastet er ikke godkjent
+for publisering. Automatisk publisering skal derfor fortsatt være avslått.
+
+RSS/GDELT-discovery har ti sekunders timeout per kall. Strukturert research,
+skriving og kontroll bruker samme betalte DeepSeek-modell uten thinking og
+med maksimalt 120 sekunder per forespørsel. Research forsøker høyst tre ekstra
+kildedokumenter innenfor arbeidslåsens fire minutter. Avbrudd under lesing av
+providersvaret rapporteres som tidsavbrudd; avkortet JSON godtas ikke.
 
 Gjenværende grenser:
 
@@ -171,3 +191,23 @@ Implementasjonen startet fra `main` på
 `3f9c823e82271b7ef444108fd5cce5b50a8bbfc2`, som også ble bekreftet som Vercel
 Production ved oppstart. Denne leveransen er et separat endringsforslag.
 En vellykket lokal test eller PR-bygg betyr ikke at endringen kjører i produksjon.
+
+
+### Kontrollert produksjonsutrulling
+
+`Prepare editorial production database` krever den vellykkede Neon-kjøringen
+angitt over og identisk migrasjonssjekksum i testdatabasen. Den krever at begge
+automatikkbrytere er av, migrerer additivt, kontrollerer uendret artikkelantall
+og setter produksjonens DeepSeek-nøkkel samt `EDITORIAL_AUTOPUBLISH_V1=false`.
+Database-URL-er overskrives ikke i Vercel; Neon-integrasjonen beholdes.
+
+Etter merge venter `Activate editorial review mode` på at produksjonens
+`/api/health` viser nøyaktig merge-commit, nytt skjema og gjennomgangsmodus.
+Først da aktiveres automatikk med publiseringsbryteren fortsatt av. Workflowen
+kjører deretter en vanlig redaksjonsrunde med eksisterende cron-autentisering.
+Den deler samtidighetsgruppe med den ordinære scheduler-jobben.
+
+Secrets leses bare i GitHub Actions. Test og produksjon må peke til ulike
+Neon-endepunkter. Pooled URL-er normaliseres til samme grens direkte endepunkt.
+En vellykket migrasjon alene er ikke bevis for at ny kode er live; sjekk alltid
+GitHub main, Vercel Production og responsen fra produksjonsdomenet.
