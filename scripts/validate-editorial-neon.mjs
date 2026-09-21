@@ -76,12 +76,17 @@ try {
   const response=await client.deepSeekJsonRequest({model:'deepseek-v4-pro',system:'Return JSON only.',user:'Return {"ok":true}.',maxTokens:100,timeoutMs:30000,retries:0});
   assert.equal(response.json.ok,true);
   log({stage,ok:true,usage:response.usage});
+  stage='fresh_discovery';
+  const radarEngine=await app.load('lib/radar/news-radar.js');
+  const discovered=await radarEngine.runNewsRadar();
+  log({stage,seen:discovered.seen,inserted:discovered.inserted,sourceErrors:discovered.errors.map(safeMessage)});
   stage='real_research';
   const writer=await app.load('lib/ai/write-article.js');
   await writer.ensureArticleWriterSchema(sql);
   const research=await app.load('lib/research/fact-pack.js');
-  const candidates=await sql`SELECT * FROM radar_items WHERE url IS NOT NULL ORDER BY published_at DESC NULLS LAST,discovered_at DESC LIMIT 100`;
-  const selected=candidates.filter(x=>assessAudience(x).eligible && sourceRoleFromUrl(x.primary_source_url||x.url,x).role!=='unknown').slice(0,8);
+  const candidates=await sql`SELECT * FROM radar_items WHERE url IS NOT NULL ORDER BY published_at DESC NULLS LAST,discovered_at DESC LIMIT 300`;
+  const selected=candidates.filter(x=>assessAudience(x).eligible && sourceRoleFromUrl(x.primary_source_url||x.url,x).role!=='unknown')
+    .sort((a,b)=>assessAudience(b).score-assessAudience(a).score).slice(0,8);
   let drafts=0, rejected=0, errors=0;
   for (const candidate of selected) {
     const existing=await getCase(sql,candidate.id);
@@ -107,9 +112,9 @@ try {
       stage='real_research';
     }
   }
-  log({stage:'complete',ok:errors===0,candidates:selected.length,drafts,rejected,errors,autopublish:false,
+  log({stage:'complete',ok:errors===0&&drafts>0,candidates:selected.length,drafts,rejected,errors,autopublish:false,
     limitation:drafts?'Real drafts require editorial review.':'No eligible document yielded a draft; full real-source flow remains unverified.'});
-  if(errors) process.exitCode=1;
+  if(errors||!drafts) process.exitCode=1;
 } catch(error) {
   // Never emit arbitrary provider exceptions, which may contain credentials.
   const safeCode=/^[A-Z0-9_]{1,64}$/.test(String(error.code||''))?error.code:'VALIDATION_FAILED';
