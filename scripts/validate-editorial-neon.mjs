@@ -90,7 +90,7 @@ try {
       log({stage:'retry_wait',radarId:candidate.id}); continue;
     }
     try {
-    const result=await research.buildFactPackForRadarItem(candidate.id);
+    const result=await research.buildFactPackForRadarItem(candidate.id, { manualOverride: existing?.state === 'failed' && existing?.step === 'research' });
     log({stage,radarId:candidate.id,title:candidate.title,...result});
     if(result.canWrite && drafts<2) {
       stage='real_draft';
