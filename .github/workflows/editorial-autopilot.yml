@@ -63,7 +63,9 @@ jobs:
               exit 0
             fi
 
-            sleep 2
+            wait_seconds="$(echo "$response" | jq -r '.state.retryAfterSeconds // 2')"
+            if ! [[ "$wait_seconds" =~ ^[0-9]+$ ]] || [ "$wait_seconds" -gt 30 ]; then wait_seconds=2; fi
+            sleep "$wait_seconds"
           done
 
           echo "Autopiloten nådde sikkerhetsgrensen på 45 steg før eksplisitt done."

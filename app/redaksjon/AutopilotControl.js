@@ -11,13 +11,14 @@ const STAGE_LABELS = {
   selection: 'Velger toppsakene',
   research: 'Bygger kilde- og faktapakker',
   drafting: 'Skriver ferdige artikler',
-  recovery: 'Prøver utsatt jobb på nytt',
+  verification: 'Kontrollerer utkast mot kildene',
+  waiting: 'Venter på aktiv jobb eller nytt forsøk',
   done: 'Ferdig',
 };
 
 function queueSummary(state) {
   if (!state) return '';
-  return `Lokal filter: ${state.triagePending ? 'venter' : 'ferdig'} · AI-kandidater: ${state.scoring} · AI-retry: ${state.deferredScoring ?? 0} · Researchpool: ${state.selectionPending ? 'venter' : (state.selected ?? 0)} · Research igjen: ${state.research} (+${state.deferredResearch ?? 0} senere) · Skrevet: ${state.draftsCreated ?? 0}/${state.articleLimit ?? 3} · klare nå: ${state.drafting}`;
+  return `AI-kandidater: ${state.scoring} · Research igjen: ${state.research} · Skrevet: ${state.draftsCreated ?? 0}/${state.articleLimit ?? 3} · Til kontroll: ${state.verification ?? 0} · Venter: ${state.waiting ?? 0} · Stoppet: ${state.blocked ?? 0} · Feilet: ${state.failed ?? 0}`;
 }
 
 export default function AutopilotControl() {
@@ -25,7 +26,7 @@ export default function AutopilotControl() {
   const stopRef = useRef(false);
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState('');
-  const [message, setMessage] = useState('Klar. Den manuelle testkjøringen lager ferdige utkast. Den planlagte timekjøringen følger publiseringsbryteren over.');
+  const [message, setMessage] = useState('Klar. Manuell test lager utkast med separat kildekontroll. Automatisk publisering krever at den nye publiseringskontrollen er aktivert.');
   const [state, setState] = useState(null);
   const [processed, setProcessed] = useState(0);
   const [errors, setErrors] = useState([]);
@@ -76,7 +77,7 @@ export default function AutopilotControl() {
         }
 
         const progressKey = currentState
-          ? [result.stage, currentState.triagePending, currentState.scoring, currentState.deferredScoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.deferredResearch, currentState.draftsCreated, currentState.drafting, currentState.deferredDrafting].join(':')
+          ? [result.stage, currentState.triagePending, currentState.scoring, currentState.selectionPending, currentState.selected, currentState.research, currentState.draftsCreated, currentState.drafting, currentState.verification, currentState.waiting, currentState.failed].join(':')
           : result.stage;
 
         if (result.stage === 'discovery') {
@@ -93,9 +94,8 @@ export default function AutopilotControl() {
           const titles = selected.slice(0, 6).map((x) => '#' + x.rank + ' ' + x.title).join(' · ');
           setMessage(`Researchpool klar: ${selected.length} sterke hendelser undersøkes. Maks ${Number(result.articleLimit || 3)} av dem blir ferdige artikler.${titles ? ' ' + titles : ''}`);
           stalled = 0;
-        } else if (result.stage === 'recovery') {
-          const detail = Array.isArray(result.details) ? result.details[0] : null;
-          setMessage(`Retry av tidligere utsatt ${detail?.kind === 'draft' ? 'utkast' : 'research'}: ${result.processed ? 'ferdig' : 'utsatt igjen'}.`);
+        } else if (result.stage === 'waiting') {
+          setMessage(`Venter på denne rundens aktive jobb eller neste forsøk. ${queueSummary(currentState)}.`);
           stalled = 0;
         } else {
           setMessage(`${STAGE_LABELS[result.stage] || 'Jobber'} · ${queueSummary(currentState)} · ${totalProcessed} arbeidssteg ferdig`);
@@ -104,18 +104,17 @@ export default function AutopilotControl() {
         lastProgressKey = progressKey;
 
         if (result.stage === 'done') {
-          const deferred = Number(currentState?.deferredScoring || 0)
-            + Number(currentState?.deferredResearch || 0)
-            + Number(currentState?.deferredDrafting || 0);
-          setMessage(deferred > 0
-            ? `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · ${deferred} deljobber er utsatt til automatisk retry senere.`
-            : `Autopilot ferdig · ${totalProcessed} arbeidssteg behandlet · denne redaksjonsrunden er ferdig.`);
+          setMessage(`Runden er avsluttet. ${queueSummary(currentState)}. Se saksoversikten for kontrollpunkter og feil.`);
           break;
         }
 
         if (stalled >= 3) {
           setMessage(`Autopiloten stoppet kontrollert fordi samme arbeid feilet flere ganger. ${queueSummary(currentState)}.`);
           break;
+        }
+        const delay = Math.max(1, Math.min(30, Number(currentState?.retryAfterSeconds) || 2));
+        for (let second = 0; second < delay && !stopRef.current; second++) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
 
@@ -146,7 +145,7 @@ export default function AutopilotControl() {
         <div>
           <b>Autopilot · steg 1</b>
           <small>
-            Ett klikk: discovery → lokal støyfiltrering og hendelsesklynger → maks ca. 45 AI-kandidater → researchpool på opptil 6 → de beste dokumenterte sakene blir maks 3 ferdige artikler. Automatisk publisering styres separat av bryteren over.
+            Henter kandidater, dokumenterer fakta, lagrer utkast og kontrollerer teksten. Opptil 3 utkast per runde; null er tillatt. Følg kildegrunnlag og stoppårsaker i saksoversikten.
           </small>
         </div>
         <div className="autopilotActions">

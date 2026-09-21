@@ -6,6 +6,7 @@ import {
   rejectFromDraftAction,
   regenerateDraftFromReviewAction,
   saveDraftEditAction,
+  verifyEditedDraftAction,
 } from '../../actions';
 import DraftEditor from '../DraftEditor';
 import AdminSubmitButton from '../../AdminSubmitButton';
@@ -25,6 +26,8 @@ export default async function DraftReviewPage({ params, searchParams }) {
   const facts = asArray(article.facts);
   const numbers = asArray(article.numbers);
   const unknowns = asArray(article.unknowns);
+  const editorialCase = article.editorial_case;
+  const dossier = editorialCase?.dossier;
 
   return (
     <main className="adminShell">
@@ -61,7 +64,7 @@ export default async function DraftReviewPage({ params, searchParams }) {
               <b>Redaksjonell status</b>
               {article.radar_item_id ? (
                 <small>
-                  {article.tall_validert ? 'Automatisk tallkontroll bestått' : 'Manuell/redaksjonell kontroll kreves'} · faktapakke {article.fact_pack_version || '—'}.
+                  {article.tall_validert ? 'Kontroll mot kildegrunnlaget bestått' : 'Kontroll av utkastet kreves'} · faktapakke {article.fact_pack_version || '—'}.
                 </small>
               ) : (
                 <small>Egen artikkel · ingen AI-faktapakke er koblet til.</small>
@@ -69,6 +72,12 @@ export default async function DraftReviewPage({ params, searchParams }) {
               {article.valideringsnotat ? <small>{article.valideringsnotat}</small> : null}
             </div>
             <div className="adminActions">
+              {editorialCase ? (
+                <form action={verifyEditedDraftAction}>
+                  <input type="hidden" name="id" value={article.id}/>
+                  <AdminSubmitButton className="secondary" pendingText="Kontrollerer mot kildene …">Kontroller utkast</AdminSubmitButton>
+                </form>
+              ) : null}
               {article.radar_item_id ? (
                 <form action={regenerateDraftFromReviewAction}>
                   <input type="hidden" name="radar_id" value={article.radar_item_id}/>
@@ -104,6 +113,24 @@ export default async function DraftReviewPage({ params, searchParams }) {
         </section>
 
         <aside className="adminAside">
+          <div className="adminNote">
+            <b>Saksflyt {editorialCase ? `· sak ${editorialCase.id}` : ''}</b>
+            <p>{editorialCase ? `Status: ${editorialCase.state} · versjon ${editorialCase.revision}` : article.case_error || 'Eldre utkast: bygg faktagrunnlaget på nytt for å bruke den nye kontrollen.'}</p>
+            {dossier ? <>
+              <p>{dossier.selection?.reason}</p>
+              <p>Originalt publisert: {dossier.sources?.[0]?.publication?.at || 'Ikke verifisert'}</p>
+              <p>Research: {dossier.research?.passed ? 'Bestått' : 'Kontroll kreves'} · Utkast: {dossier.verification?.passed && article.tall_validert ? 'Bestått' : 'Kontroll kreves'}</p>
+              {(dossier.verification?.reasons || dossier.research?.reasons || []).map(reason => <p key={reason}>{reason}</p>)}
+              <details><summary>Se fakta og kildebevis</summary>
+                {asArray(dossier.factPack?.facts).map(fact => <div key={fact.id}>
+                  <p><strong>{fact.id}: </strong>{fact.fact}</p>
+                  <blockquote>{fact.evidence_quote}</blockquote>
+                  <a href={fact.source_url} target="_blank" rel="noreferrer">Åpne dokumentet</a>
+                </div>)}
+              </details>
+            </> : null}
+            <Link href="/redaksjon/saker">Alle saker og stoppårsaker →</Link>
+          </div>
           {article.radar_item_id ? (
             <>
               <div className="adminNote">

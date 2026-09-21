@@ -11,7 +11,7 @@ import { runNewsRadar } from '../../lib/radar/news-radar';
 import { prepareRadarCandidates } from '../../lib/radar/local-triage';
 import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
 import { buildFactPackForRadarItem } from '../../lib/research/fact-pack';
-import { generateArticleDraftFromRadar } from '../../lib/ai/write-article';
+import { generateArticleDraftFromRadar, verifyEditedDraft } from '../../lib/ai/write-article';
 import { runAutopilotStep } from '../../lib/autopilot/autopilot';
 import { setAutomationEnabled, setAutoPublishEnabled } from '../../lib/autopilot/editorial-settings';
 
@@ -134,7 +134,7 @@ export async function buildFactPackAction(formData) {
   await requireAdmin();
   const id = Number(formData.get('id'));
   if (!Number.isFinite(id)) throw new Error('Ugyldig radartreff.');
-  const result = await buildFactPackForRadarItem(id);
+  const result = await buildFactPackForRadarItem(id, { manualOverride: true });
   revalidatePath('/redaksjon');
   return { ok: true, ...result };
 }
@@ -189,7 +189,11 @@ export async function regenerateDraftFromReviewAction(formData) {
   const radarId = Number(formData.get('radar_id'));
   if (!Number.isFinite(radarId)) throw new Error('Dette utkastet er ikke koblet til et radartreff.');
 
-  const result = await generateArticleDraftFromRadar(radarId);
+  // A legacy draft may not yet have the new source contract. Explicit
+  // regeneration rebuilds its evidence first and never bypasses source gates.
+  const research = await buildFactPackForRadarItem(radarId, { manualOverride: true });
+  if (!research.canWrite) throw new Error('Faktagrunnlaget bestod ikke kontrollen. Se stoppårsaken i saksoversikten.');
+  const result = await generateArticleDraftFromRadar(radarId, { force: true });
   revalidatePath('/redaksjon');
   if (!result?.articleId) throw new Error('Kunne ikke regenerere utkastet.');
   redirect(`/redaksjon/utkast/${result.articleId}?regenerated=1`);
@@ -260,4 +264,13 @@ export async function manualCreateStoryAction(id) {
       error: error?.message || 'Kunne ikke lage saken.',
     };
   }
+}
+
+export async function verifyEditedDraftAction(formData) {
+  await requireAdmin();
+  const id = Number(formData.get('id'));
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Ugyldig artikkel.');
+  await verifyEditedDraft(id, { manual: true });
+  revalidatePath(`/redaksjon/utkast/${id}`);
+  redirect(`/redaksjon/utkast/${id}?checked=1`);
 }
