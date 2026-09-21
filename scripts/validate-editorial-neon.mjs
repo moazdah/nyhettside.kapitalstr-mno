@@ -89,7 +89,9 @@ try {
     .sort((a,b)=>assessAudience(b).score-assessAudience(a).score).slice(0,8);
   let drafts=0, rejected=0, errors=0;
   for (const candidate of selected) {
+    if(drafts>=2) break;
     const existing=await getCase(sql,candidate.id);
+    if(existing?.lease_until && new Date(existing.lease_until)>new Date()) { log({stage:'lease_wait',radarId:candidate.id}); continue; }
     if(existing?.state==='failed') log({stage:'previous_failure',radarId:candidate.id,step:existing.step,error:safeMessage(existing.last_error)});
     if(existing?.retry_after && new Date(existing.retry_after)>new Date()) {
       log({stage:'retry_wait',radarId:candidate.id}); continue;

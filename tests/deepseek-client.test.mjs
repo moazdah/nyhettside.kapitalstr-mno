@@ -6,7 +6,7 @@ const source=await readFile(new URL('../lib/ai/deepseek-client.js',import.meta.u
 async function client(body) {
   let payload;
   const context=vm.createContext({process:{env:{DEEPSEEK_API_KEY:'test-only'}},AbortController,setTimeout,clearTimeout,
-    fetch:async(_url,options)=>{payload=JSON.parse(options.body);return {ok:true,json:async()=>body};}});
+    fetch:async(_url,options)=>{payload=JSON.parse(options.body);return {ok:true,json:async()=>typeof body==='function'?body():body};}});
   const module=new vm.SourceTextModule(source,{context});
   await module.link(()=>{throw new Error('Unexpected dependency');});await module.evaluate();
   return {request:module.namespace.deepSeekJsonRequest,payload:()=>payload};
@@ -24,4 +24,9 @@ test('Structured non-thinking request returns provider JSON and usage',async()=>
   const result=await c.request({system:'JSON',user:'test',retries:0,thinking:false});
   assert.equal(result.json.ok,true);assert.equal(result.usage.completion_tokens,5);
   assert.equal(c.payload().thinking.type,'disabled');
+});
+
+test('Body read timeout is reported as timeout rather than empty JSON',async()=>{
+  const c=await client(()=>{throw Object.assign(new Error('Aborted'),{name:'AbortError'});});
+  await assert.rejects(c.request({system:'JSON',user:'test',retries:0,timeoutMs:120000}),/mer enn 120 sekunder/);
 });
