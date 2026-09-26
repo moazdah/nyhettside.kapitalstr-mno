@@ -9,7 +9,7 @@ try {
   const [first]=await sql`INSERT INTO feed(tekst,headline,summary,status,tidspunkt,generated_by)
     VALUES(${marker+' first'},${marker+' first'},'Testmelding','live',now(),${marker}) RETURNING id,tidspunkt`;
   browser=await chromium.launch({headless:true});
-  const page=await browser.newPage({viewport:{width:1280,height:900}});
+  const page=await browser.newPage({baseURL:'http://localhost:3000',viewport:{width:1280,height:900}});
   const errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('http://localhost:3000',{waitUntil:'networkidle'});
@@ -37,6 +37,14 @@ try {
   assert.equal(await page.locator('[data-nextjs-dialog]').count(),0);
   assert.deepEqual(errors,[]);
   await page.screenshot({path:'live-rail-mobile.png'});
+  await page.goto('http://localhost:3000/redaksjon?tab=radar',{waitUntil:'networkidle'});
+  await page.getByRole('heading',{name:'Nyhetsmotor og publisering'}).waitFor();
+  await page.getByText('Siste vellykkede puls:',{exact:false}).waitFor();
+  await page.getByText('Gjennomgangsmodus: Fullartikler krever din godkjenning.',{exact:true}).waitFor();
+  assert.deepEqual(errors,[]);
+  assert.equal((await page.request.get('/api/cron/engine')).status(),401);
+  const inactive=await page.request.get('/api/cron/engine',{headers:{Authorization:'Bearer engine-ci-only'}});
+  assert.equal((await inactive.json()).reason,'not_activated');
   console.log(JSON.stringify({ok:true,polling:true,expiry:true,stableTimestamp:true,max12:true,horizontal:true,noPageErrors:true}));
 } catch(error) {
   console.error(JSON.stringify({ok:false,kind:error.name,message:String(error.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[REDACTED]').slice(0,350)}));
