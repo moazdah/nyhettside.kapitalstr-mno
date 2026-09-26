@@ -64,3 +64,38 @@ test('Live feed retries preserve timestamps and concurrent publication caps acti
     assert.deepEqual(repeated.map(row=>String(row.tidspunkt)),rows.map(row=>String(row.tidspunkt)));
   } finally {await d.pg.close();}
 });
+
+test('Live stages resume a failed score and never repeat a committed publication',async()=>{
+  const d=await database();
+  try {
+    await d.pg.exec('CREATE TABLE editorial_settings(id int); CREATE TABLE feed(id bigint);');
+    await applyMigration(d.sql,'002_news_engine.sql',await readFile(new URL('../migrations/002_news_engine.sql',import.meta.url),'utf8'));
+    let discovery=0, scoring=0, published=0;
+    const app=application(d.sql,{overrides:{
+      'lib/radar/news-radar.js':{runNewsRadar:async()=>{discovery++;return {seen:3,inserted:2};}},
+      'lib/radar/local-triage.js':{prepareRadarCandidates:async()=>({candidates:2})},
+      'lib/ai/score-radar-items.js':{scorePendingRadarItems:async()=>{if(++scoring===1) throw new Error('temporary');return {scored:2};}},
+      'lib/live-updates.js':{syncLiveUpdatesFromRecentRadar:async options=>{assert.equal(options.autoPublish,true);published++;return {created:1,errors:[]};}},
+      'lib/sources/norges-bank.js':{syncNorgesBankFx:async()=>[{}]},
+      'lib/sources/global-markets.js':{syncGlobalMarkets:async()=>({updated:1,errors:[]})},
+    }});
+    const engine=await app.load('lib/engine/live.js');
+    const settings={livePublishEnabled:true,autoPublishEnabled:false};
+    const started=await engine.runLiveStep({settings});
+    const pulseId=started.pulseId;
+    assert.equal(started.stage,'score');
+    await assert.rejects(engine.runLiveStep({settings,pulseId,requestedStage:'score'}),/temporary/);
+    const [failed]=await d.sql`SELECT stage,status FROM live_pulse_runs WHERE id=${pulseId}`;
+    assert.equal(failed.stage,'score');
+    assert.equal(failed.status,'error');
+    await d.sql`UPDATE engine_jobs SET retry_after=now()-interval '1 second' WHERE kind='live'`;
+    assert.equal((await engine.runLiveStep({settings,resume:true})).stage,'publish');
+    assert.equal((await engine.runLiveStep({settings,pulseId,requestedStage:'score'})).stage,'publish');
+    assert.equal((await engine.runLiveStep({settings,pulseId,requestedStage:'publish'})).stage,'markets');
+    await engine.runLiveStep({settings,pulseId,requestedStage:'publish'});
+    assert.equal(published,1);
+    assert.equal((await engine.runLiveStep({settings,pulseId,requestedStage:'markets'})).stage,'done');
+    assert.equal((await engine.runLiveStep({settings,pulseId})).skipped,true);
+    assert.equal(discovery,1);
+  } finally {await d.pg.close();}
+});
