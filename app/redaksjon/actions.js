@@ -13,7 +13,7 @@ import { scorePendingRadarItems } from '../../lib/ai/score-radar-items';
 import { buildFactPackForRadarItem } from '../../lib/research/fact-pack';
 import { generateArticleDraftFromRadar, verifyEditedDraft } from '../../lib/ai/write-article';
 import { runAutopilotStep } from '../../lib/autopilot/autopilot';
-import { setAutomationEnabled, setAutoPublishEnabled } from '../../lib/autopilot/editorial-settings';
+import { setAutomationEnabled, setAutoPublishEnabled, setLivePublishEnabled } from '../../lib/autopilot/editorial-settings';
 
 async function requireAdmin() {
   // TEMPORARY DEVELOPMENT MODE:
@@ -273,4 +273,11 @@ export async function verifyEditedDraftAction(formData) {
   await verifyEditedDraft(id, { manual: true });
   revalidatePath(`/redaksjon/utkast/${id}`);
   redirect(`/redaksjon/utkast/${id}?checked=1`);
+}
+
+export async function setLivePublishEnabledAction(enabled) {
+  await requireAdmin();
+  const settings = await setLivePublishEnabled(enabled === true);
+  revalidatePath('/redaksjon');
+  return {ok:true,settings};
 }

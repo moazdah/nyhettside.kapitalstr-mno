@@ -1,4 +1,5 @@
-import { runAutopilotStep } from '../../../../lib/autopilot/autopilot';
+import { runEditorialJob } from '../../../../lib/engine/editorial';
+import { slot } from '../../../../lib/engine/clock.mjs';
 import { getEditorialSettings } from '../../../../lib/autopilot/editorial-settings';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,8 @@ export async function GET(request) {
   if (!authorized(request)) {
     return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
+
+  if (process.env.NEWS_SCHEDULER === 'vercel') return Response.json({ok:true,skipped:true,stage:'done',reason:'scheduler_replaced'});
 
   const url = new URL(request.url);
   const runId = Number(url.searchParams.get('runId') || 0) || null;
@@ -69,17 +72,17 @@ export async function GET(request) {
       });
     }
 
-    const result = await runAutopilotStep({
+    const result = await runEditorialJob({
       discovery,
       runId,
       mode: 'scheduled',
-      scheduledSlot: runId ? null : oslo.slot,
+      scheduledSlot: runId ? null : slot(new Date(),60),
     });
 
     return Response.json({
       ...result,
       scheduled: true,
-      scheduledSlot: runId ? null : oslo.slot,
+      scheduledSlot: runId ? null : slot(new Date(),60),
       settings,
       checkedAt: new Date().toISOString(),
     });
