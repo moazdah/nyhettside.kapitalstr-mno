@@ -1,5 +1,7 @@
 name: News engine isolated validation
 on:
+  push:
+    branches: [codex/reliable-news-engine]
   workflow_dispatch:
 permissions:
   contents: read
