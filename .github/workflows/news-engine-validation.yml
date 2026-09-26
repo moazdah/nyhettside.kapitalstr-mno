@@ -1,7 +1,5 @@
 name: News engine isolated validation
 on:
-  push:
-    branches: [codex/reliable-news-engine]
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,6 +30,7 @@ jobs:
           DATABASE_URL: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
           EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
           EDITORIAL_AUTOPUBLISH_V1: 'false'
+          CRON_SECRET: engine-ci-only
         run: |
           npm start > server.log 2>&1 &
           server_pid=$!
