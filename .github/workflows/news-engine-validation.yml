@@ -1,0 +1,48 @@
+name: News engine isolated validation
+on:
+  push:
+    branches: [codex/reliable-news-engine]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kapitalstrom-news-engine-validation
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - name: Isolated Neon migration, concurrent workers and interrupted jobs
+        env:
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+        run: node scripts/validate-engine-neon.mjs
+      - run: npm run build
+      - run: npm install --no-save --package-lock=false playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Verify live updates in an open browser against the isolated database
+        env:
+          DATABASE_URL: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_AUTOPUBLISH_V1: 'false'
+        run: |
+          npm start > server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://localhost:3000/api/live > /dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/validate-live-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-browser-evidence
+          path: live-rail-mobile.png
