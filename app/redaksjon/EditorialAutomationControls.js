@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { setAutomationEnabledAction, setAutoPublishEnabledAction } from './actions';
+import { setAutomationEnabledAction, setAutoPublishEnabledAction, setLivePublishEnabledAction } from './actions';
 
 function SwitchRow({ title, description, checked, busy, onToggle }) {
   return (
@@ -53,26 +53,6 @@ function runStage(run) {
   return 'Researcher valgte saker';
 }
 
-function nextClock(minutes) {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Oslo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(now);
-  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-  const hour = Number(map.hour);
-  const minute = Number(map.minute);
-  const nextMinute = minutes.find((m) => m > minute);
-  const targetHour = nextMinute == null ? (hour + 1) % 24 : hour;
-  const targetMinute = nextMinute == null ? minutes[0] : nextMinute;
-  return `${String(targetHour).padStart(2, '0')}:${String(targetMinute).padStart(2, '0')}`;
-}
-
 function pulseStage(pulse) {
   if (!pulse) return 'Ingen live-puls registrert ennå';
   if (pulse.status === 'error') return 'Siste live-puls feilet';
@@ -89,11 +69,21 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
   const [settings, setSettings] = useState({
     automationEnabled: initialSettings?.automationEnabled !== false,
     autoPublishEnabled: initialSettings?.autoPublishEnabled !== false,
+    livePublishEnabled: initialSettings?.livePublishEnabled === true,
+    articleReviewOnly: initialSettings?.articleReviewOnly !== false,
   });
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const run = initialRunStatus || null;
   const pulse = initialLivePulseStatus || null;
+  useEffect(()=>{setSettings(initialSettings);},[initialSettings]);
+  async function toggleLivePublish() {
+    if (busy) return;
+    setBusy('live'); setError('');
+    try { const result=await setLivePublishEnabledAction(!settings.livePublishEnabled); setSettings(result.settings); }
+    catch(err) { setError(err.message); }
+    finally { setBusy(''); }
+  }
   const running = run?.status === 'running';
   const pulseRunning = pulse?.status === 'running';
 
@@ -140,7 +130,7 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
       <div className="editorialAutomationHead">
         <div>
           <div className="sectionKicker">Automatisk redaksjon</div>
-          <h3>To uavhengige brytere</h3>
+          <h3>Nyhetsmotor og publisering</h3>
         </div>
         <span className={settings.automationEnabled ? 'automationStatus on' : 'automationStatus off'}>
           {settings.automationEnabled ? 'TIMEKJØRING AKTIV' : 'TIMEKJØRING STOPPET'}
@@ -169,15 +159,15 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
               <span>Publisert <b>{Number(run.published_count || 0)}</b></span>
             </div>
           ) : null}
-          <div className="automationNext">Neste motor-sjekk ca. <b>{nextClock([7,22,37,52])}</b></div>
+          <div className="automationNext">Siste fullførte runde: <b>{osloTime(run?.lastSuccess)}</b></div>
         </div>
 
-        <div className={`editorialRunStatus ${pulseRunning ? 'running' : (pulse?.status === 'error' ? 'error' : 'idle')}`}>
+        <div className={`editorialRunStatus ${pulse?.health?.status === 'error' || pulse?.status === 'error' ? 'error' : pulseRunning ? 'running' : 'idle'}`}>
           <div className="editorialRunStatusTop">
             <span className="editorialRunDot" aria-hidden="true" />
             <div>
               <b>LIVE-PULS · 5 MIN</b>
-              <strong>{pulseStage(pulse)}</strong>
+              <strong>{pulse?.health?.status==='error' ? 'VARSEL: Live-puls mangler i minst 15 minutter' : pulseStage(pulse)}</strong>
             </div>
             <small>
               {pulseRunning
@@ -193,27 +183,35 @@ export default function EditorialAutomationControls({ initialSettings, initialRu
               <span>Marked <b>{Number(pulse.markets_updated || 0)}</b></span>
             </div>
           ) : null}
-          <div className="automationNext">Neste live-sjekk ca. <b>{nextClock([2,7,12,17,22,27,32,37,42,47,52,57])}</b></div>
+          <div className="automationNext" role={pulse?.health?.status==='error'?'alert':undefined}>
+            Siste vellykkede puls: <b>{osloTime(pulse?.lastSuccess)}</b><br/>
+            {pulse?.health?.status==='paused' ? 'Motoren er stoppet' : pulse?.health?.status==='closed' ? 'Utenfor åpningstid' : `Forsinkelse utover 5-minuttersmålet: ${pulse?.health?.delayMinutes ?? 0} min`}
+          </div>
+          {pulse?.lastJobError ? <div className="automationPulseError">Siste jobbfeil ({pulse.lastJobError.kind}): {pulse.lastJobError.last_error}</div> : null}
+          <div className="editorialRunMetrics">{pulse?.jobs?.map(job=><span key={`${job.kind}-${job.status}`}>{job.kind} · {job.status}: <b>{job.count}</b></span>)}</div>
           {pulse?.error ? <div className="automationPulseError">{pulse.error}</div> : null}
         </div>
       </div>
 
       <SwitchRow
         title="Nyhetsmotor"
-        description="Hovedmotoren arbeider fra 06:00 til 23:00 norsk tid. Fullartikler behandles én gang per time, med flere redundante wake-ups. Live-strøm og markedsdata kontrolleres omtrent hvert 5. minutt. AV stopper begge."
+        description="Hovedmotoren arbeider fra 06:00 til 23:59 norsk tid. Fullartikler behandles én gang per time, med flere redundante wake-ups. Live-strøm og markedsdata kontrolleres omtrent hvert 5. minutt. AV stopper begge."
         checked={settings.automationEnabled}
         busy={busy === 'automation'}
         onToggle={toggleAutomation}
       />
 
       <SwitchRow
-        title="Automatisk publisering"
-        description="PÅ publiserer ferdigskrevne og maskinvaliderte saker automatisk. AV skriver fortsatt sakene ferdig, men sender dem til køen for din godkjenning."
-        checked={settings.autoPublishEnabled}
-        busy={busy === 'publish'}
+        title="Automatisk publisering av fullartikler"
+        description={settings.articleReviewOnly ? "Gjennomgangsmodus: Fullartikler krever din godkjenning." : "Publiserer maskinvaliderte fullartikler. AV sender dem til gjennomgang."}
+        checked={!settings.articleReviewOnly && settings.autoPublishEnabled}
+        busy={settings.articleReviewOnly || busy === 'publish'}
         onToggle={toggleAutoPublish}
       />
 
+      <SwitchRow title="Publisering av live-meldinger"
+        description="Korte live-meldinger publiseres uavhengig av fullartikler. AV legger nye meldinger som utkast."
+        checked={settings.livePublishEnabled} busy={busy==='live'} onToggle={toggleLivePublish}/>
       {error ? <div className="automationError">{error}</div> : null}
     </div>
   );
