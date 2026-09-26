@@ -38,13 +38,14 @@ export async function database() {
 
 // The app uses Next's extensionless ES module imports. Evaluate those same source
 // files, replacing only boundaries to the DB, network and paid AI provider.
-export function application(sql, { ai, fetcher, environment = {} } = {}) {
+export function application(sql, { ai, fetcher, environment = {}, overrides = {} } = {}) {
   const mocks = new Map([
     [resolve(root, 'lib/db.js'), { db: () => sql }],
     [resolve(root, 'lib/ai/deepseek-client.js'), { deepSeekJsonRequest: ai || (() => { throw new Error('Unexpected paid AI call'); }) }],
     ['node:dns/promises', { lookup: async () => [{ address: '93.184.216.34', family: 4 }] }],
     ['pdf-parse', { PDFParse: class { constructor() { throw new Error('PDF is not an HTML fixture'); } } }],
   ]);
+  for (const [path,exports] of Object.entries(overrides)) mocks.set(resolve(root,path),exports);
   const context = vm.createContext({ Buffer, URL, URLSearchParams, TextDecoder, TextEncoder,
     AbortController, AbortSignal, Response, Headers, Request, setTimeout, clearTimeout, console,
     process: { env: environment }, fetch: fetcher || (() => { throw new Error('Unexpected network call'); }) });
