@@ -25,6 +25,7 @@ try {
  const published=await page.locator('.articleMeta').textContent();
  await page.getByText('Saken oppsummert',{exact:true}).click();
  assert.equal(await page.locator('.articleSummary li').count(),1);
+ assert.equal(await page.locator('.articleSummary ul').evaluate(el=>getComputedStyle(el).listStyleType),'disc');
  const updated='Dette er en kontrollert nettlesertest av automatisk oppdatering.';
  await sql`UPDATE articles SET brodtekst=${evidence.fact+'\n\n'+updated},updated_at=now(),summary_points=${JSON.stringify([evidence.fact,'Ny kildebekreftet opplysning.','Samme artikkeladresse.'])}::jsonb WHERE id=${Number(flash.article_id)}`;
  await page.getByText(updated,{exact:true}).waitFor({timeout:20000});
