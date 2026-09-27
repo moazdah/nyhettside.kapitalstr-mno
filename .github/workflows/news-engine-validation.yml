@@ -34,6 +34,7 @@ jobs:
           EDITORIAL_AUTOPUBLISH_V1: 'false'
           CRON_SECRET: engine-ci-only
         run: |
+          export ADMIN_PASSWORD_HASH="$(node --input-type=module -e "import {createHash} from 'node:crypto';console.log(createHash('sha256').update('breaking-browser-test-only').digest('hex'))")"
           npm start > server.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
