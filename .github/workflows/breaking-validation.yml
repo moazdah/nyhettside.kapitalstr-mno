@@ -1,5 +1,5 @@
 name: Breaking desk isolated validation
-# Check visible summary bullet markers as well as the complete publication flow.
+# Verify restored existing admin authentication and automatic news independently.
 on:
   push:
     branches: [codex/breaking-news-desk]
@@ -45,6 +45,7 @@ jobs:
           EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
           CRON_SECRET: breaking-ci-only
         run: |
+          export ADMIN_PASSWORD_HASH="$(node --input-type=module -e "import {createHash} from 'node:crypto';console.log(createHash('sha256').update('breaking-browser-test-only').digest('hex'))")"
           npm start > server.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" || true' EXIT
