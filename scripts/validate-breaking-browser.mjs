@@ -40,6 +40,7 @@ try {
  await page.locator('.breakingArticleStatus').waitFor({state:'detached',timeout:20000});
  assert.equal((await page.request.get('/api/cron/breaking')).status(),401);
  assert.equal((await page.request.get('/api/cron/breaking-enrich')).status(),401);
+ assert.equal((await page.request.get('/api/ai-status')).status(),401);
  await page.goto('/redaksjon?tab=radar',{waitUntil:'networkidle'});
  assert.equal(new URL(page.url()).pathname,'/redaksjon/login');
  await page.getByLabel('Passord',{exact:true}).fill('breaking-browser-test-only');
