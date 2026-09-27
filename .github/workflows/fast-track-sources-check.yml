@@ -6,7 +6,7 @@ name: Fast-track sources live check (read only)
 on:
   push:
     branches: [claude/kapitalstrom-editorial-priority-h53f92]
-    paths: ['lib/breaking/**', 'scripts/check-fast-track-sources.mjs', 'scripts/inspect-fast-track-sources.mjs', '.github/workflows/fast-track-sources-check.yml']
+    paths: ['lib/breaking/**', 'scripts/check-fast-track-sources.mjs', '.github/workflows/fast-track-sources-check.yml']
   schedule:
     - cron: '23 5 * * 1'
   workflow_dispatch:
@@ -23,5 +23,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node scripts/inspect-fast-track-sources.mjs
       - run: node scripts/check-fast-track-sources.mjs

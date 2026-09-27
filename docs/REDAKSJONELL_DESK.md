@@ -68,10 +68,15 @@ Artikkelsiden viser «Kilder i saken». Hurtigsaker får en `story_key`
 | SSB | KPI og KPI-JAE (tolvmånedersvekst) | Tallene ordrett fra statistikkbanken, med forrige måned | Nei – tallene er selve saken |
 | Oslo Børs | Resultater og innsideinformasjon fra ca. 40 store selskaper | Utsteder + meldingens tittel i anførselstegn | Ja, verifisert mot meldingsteksten |
 
-- SSB leses fra det åpne API-et (PxWebApi, JSON-stat 2). Variabelkoder finnes fra tabellens
-  egne etiketter, så en omdøpt kode stopper saken i stedet for å gi feil tall. Første gang en
+- SSB leses fra det åpne API-et (PxWebApi, JSON-stat 2), tabell **14700** (KPI) og **14706**
+  (KPI-JAE), begge med 2025=100. De eldre tabellene 03013/05327 sluttet med desember 2025 –
+  dette ble oppdaget av livekontrollen 27. september. Variabelkoder finnes fra tabellens egne
+  etiketter, så en omdøpt kode stopper saken i stedet for å gi feil tall. En tabell der nyeste
+  måned er mer enn to måneder gammel gir driftsvarsel (`SSB_TABLE_STALE`). Første gang en
   periode sees, publiseres den bare hvis den er under tre timer gammel.
-- Oslo Børs: invitasjoner, innsidehandler, tilbakekjøp, finanskalender og flagging filtreres
+- Oslo Børs: lista på live.euronext.com åpner meldingene via meldings-ID (`data-node-nid`).
+  Leseren får lenke til `/en/listview/company-press-release/{id}`; utdypingen leser selve
+  meldingsteksten fra `/en/ajax/node/company-press-release/{id}`. Invitasjoner, innsidehandler, tilbakekjøp, finanskalender og flagging filtreres
   bort. Meldinger eldre enn to timer publiseres ikke. Tall kommer først gjennom den separate,
   verifiserte utdypingen; mangler lesbar meldingstekst, blir kortmeldingen stående alene.
 - Hver kilde har eget vindu (norsk tid) og egen kretsbryter: feil gir økende pause
@@ -119,6 +124,11 @@ redaktør erstattes aldri.
 - Admin viser åpne varsler, status per kilde, kretsbryter og målingene fra punkt 1.
 
 ## Utrulling
+
+**Status 27. september 2026:** Migrasjon 004 er kjørt – først på den isolerte Neon-testgrenen
+med hurtigpublisering og opprydding, deretter i produksjon. Brytere og antall artikler (37)
+var uendret; 16 av 20 publiserte artikler fikk «Saken oppsummert» fra verifiserte fakta.
+Livekontrollen mot SSB, Norges Bank og Oslo Børs er grønn etter rettelsene over.
 
 1. `Prepare newsroom desk schema (migration 004)` kjører testene, migrerer den kjente,
    isolerte Neon-testgrenen, gjør en syntetisk hurtigpublisering der og rydder opp, og migrerer

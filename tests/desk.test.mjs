@@ -5,7 +5,7 @@ import { database, application } from './helpers/runtime.mjs';
 import { assessStory, currentRank } from '../lib/desk/priority.mjs';
 import { sameStory, matchStory, storySimilarity } from '../lib/desk/stories.mjs';
 import { factSummary, normalizeSummary } from '../lib/desk/summary.mjs';
-import { buildQuery, latestTwo, releaseFlash, detectSsbReleases, SSB_RELEASES } from '../lib/breaking/ssb.mjs';
+import { buildQuery, latestTwo, releaseFlash, detectSsbReleases, assertCurrent, SSB_RELEASES } from '../lib/breaking/ssb.mjs';
 import { parseCompanyNews, classifyNotice, noticeFlash } from '../lib/breaking/oslo-bors.mjs';
 import { publishFlash } from '../lib/breaking/store.mjs';
 import { evaluateOps, notifyAlerts, MAX_REVIVALS, reviveDelayMinutes } from '../lib/ops/alerts.mjs';
@@ -52,7 +52,7 @@ test('Summary: only research-verified facts, attributed when needed, never the A
 });
 
 const ssbMetadata = { variables: [
-  { code: 'Konsumgrp', values: ['TOTAL', '01'], valueTexts: ['Totalindeks', 'Matvarer og alkoholfrie drikkevarer'], elimination: true },
+  { code: 'Konsumgrp', values: ['TOTAL', '01'], valueTexts: ['I alt', 'Matvarer og alkoholfrie drikkevarer'], elimination: true },
   { code: 'ContentsCode', values: ['KpiIndMnd', 'Tolvmanedersendring'], valueTexts: ['Konsumprisindeks (2015=100)', '12-måneders endring (prosent)'] },
   { code: 'Tid', values: ['2026M07', '2026M08'], valueTexts: ['2026M07', '2026M08'], time: true }] };
 const ssbData = (values = [3.0, 3.1], updated = '2026-09-10T06:00:00Z', periods = ['2026M07', '2026M08']) => ({ class: 'dataset', updated, id: ['Konsumgrp', 'ContentsCode', 'Tid'], size: [1, 1, 2],
@@ -71,6 +71,7 @@ test('SSB: codes are discovered from labels; flash states only the published fig
   assert.equal(flash.storyKey, 'ssb:kpi:2026M08'); assert.equal(flash.enrich, false);
   assert.throws(() => releaseFlash(SSB_RELEASES[0], [figure], { now: now + 5 * 3600000 }), /NOT_FRESH/);
   assert.match(releaseFlash(SSB_RELEASES[0], [latestTwo(ssbData([0.2, -0.4]), spec)], { now }).fact, /falt 0,4 prosent.*ned fra 0,2/);
+  assert.throws(() => assertCurrent({ table: '03013', period: '2025M12' }, now), /SSB_TABLE_STALE_03013/);
   assert.throws(() => buildQuery({ variables: [{ code: 'Tid', values: ['x'], valueTexts: ['x'], time: true }, { code: 'ContentsCode', values: ['A'], valueTexts: ['Indeks'] }] }, spec), /TWELVE_MONTH_MISSING/);
 });
 
@@ -87,11 +88,11 @@ test('SSB: stale data on first run is remembered but not published; a new period
   assert.equal(next.found.length, 1); assert.equal(next.found[0].headline, 'Prisveksten var 2,8 prosent i september');
 });
 
-const bors = `<table><tr><td>10 Sep 2026 07:00 CEST</td><td>EQUINOR ASA</td><td><a href="/en/listview/company-press-release/111">Equinor third quarter 2026 results</a></td><td>Energy</td><td>Half yearly financial reports and audit reports</td></tr>
-<tr><td>10 Sep 2026 07:05 CEST</td><td>DNB BANK ASA</td><td><a href="/en/listview/company-press-release/112">Invitation to presentation of third quarter results</a></td><td>Banks</td><td>Non-regulatory press releases</td></tr>
-<tr><td>10 Sep 2026 07:06 CEST</td><td>LITEN SMÅ ASA</td><td><a href="/en/listview/company-press-release/113">Q3 2026 results</a></td><td>Tech</td><td>Inside information</td></tr>
-<tr><td>10 Sep 2026 07:10 CEST</td><td>KONGSBERG GRUPPEN ASA</td><td><a href="/en/listview/company-press-release/114">Kongsberg awarded NOK 5 billion contract</a></td><td>Defence</td><td>Inside information</td></tr>
-<tr><td>10 Sep 2026 07:12 CEST</td><td>MOWI ASA</td><td><a href="/en/listview/company-press-release/115">Mandatory notification of trade - primary insider</a></td><td>Seafood</td><td>Inside information</td></tr></table>`;
+const bors = `<table><tr><td>10 Sep 2026 07:00 CEST</td><td>EQUINOR ASA</td><td><a href="" class="standardRightCompanyPressRelease" data-node-nid="111" data-toggle="modal">Equinor third quarter 2026 results</a></td><td>Energy</td><td>Half yearly financial reports and audit reports</td></tr>
+<tr><td>10 Sep 2026 07:05 CEST</td><td>DNB BANK ASA</td><td><a href="" class="standardRightCompanyPressRelease" data-node-nid="112" data-toggle="modal">Invitation to presentation of third quarter results</a></td><td>Banks</td><td>Non-regulatory press releases</td></tr>
+<tr><td>10 Sep 2026 07:06 CEST</td><td>LITEN SMÅ ASA</td><td><a href="" class="standardRightCompanyPressRelease" data-node-nid="113" data-toggle="modal">Q3 2026 results</a></td><td>Tech</td><td>Inside information</td></tr>
+<tr><td>10 Sep 2026 07:10 CEST</td><td>KONGSBERG GRUPPEN ASA</td><td><a href="" class="standardRightCompanyPressRelease" data-node-nid="114" data-toggle="modal">Kongsberg awarded NOK 5 billion contract</a></td><td>Defence</td><td>Inside information</td></tr>
+<tr><td>10 Sep 2026 07:12 CEST</td><td>MOWI ASA</td><td><a href="" class="standardRightCompanyPressRelease" data-node-nid="115" data-toggle="modal">Mandatory notification of trade - primary insider</a></td><td>Seafood</td><td>Inside information</td></tr></table>`;
 test('Oslo Børs: large-cap results and material notices take the fast track; invitations, insiders and small caps do not', () => {
   const rows = parseCompanyNews(bors);
   assert.equal(rows.length, 5); assert.equal(rows[0].publishedAt.toISOString(), '2026-09-10T05:00:00.000Z');
@@ -99,6 +100,7 @@ test('Oslo Børs: large-cap results and material notices take the fast track; in
   const flash = noticeFlash(rows[0], { now: Date.parse('2026-09-10T05:00:40Z') });
   assert.equal(flash.headline, 'Equinor har lagt fram tall: «Equinor third quarter 2026 results»');
   assert.equal(flash.url, 'https://live.euronext.com/en/listview/company-press-release/111');
+  assert.equal(flash.textUrl, 'https://live.euronext.com/en/ajax/node/company-press-release/111');
   assert.equal(noticeFlash(rows[0], { now: Date.parse('2026-09-10T08:00:00Z') }), null, 'old announcements are not flashed');
 });
 
@@ -204,5 +206,26 @@ test('Operations: exhausted jobs are revived with widening pauses, then alert cr
     await d.sql`UPDATE engine_jobs SET status='done'`;
     await evaluateOps(d.sql, { now: new Date() });
     assert.equal((await d.sql`SELECT * FROM ops_alerts WHERE resolved_at IS NULL`).length, 0, 'recovery resolves alerts');
+  } finally { await d.pg.close(); }
+});
+
+test('Exchange enrichment reads the announcement text by node id and is verified before replacing the flash', async () => {
+  const announcement = 'Kongsberg Gruppen ASA has been awarded a contract worth NOK 5 billion for air defence systems. Deliveries start in 2027. The contract strengthens the order backlog of the company considerably according to the company itself. '.repeat(3);
+  const paragraphs = ['Kongsberg Gruppen har fått en kontrakt verdt 5 milliarder kroner.', 'Leveransene starter i 2027, opplyser selskapet.', 'Selskapet sier kontrakten styrker ordreboken.'];
+  let fetched = null;
+  const d = await setup({
+    fetcher: async url => { fetched = String(url); return new Response(`<div>Kongsberg awarded NOK 5 billion contract 10 Sep 2026 07:10 CEST Subscribe Issuer Kongsberg <p>${announcement}</p></div>`, { status: 200 }); },
+    ai: async options => options.label.includes('kontroll')
+      ? { json: { passed: true, checks: Array.from({ length: 6 }, (_, id) => ({ id, supported: true, source_ids: ['S1'] })) } }
+      : { json: { paragraphs, summary: paragraphs } },
+  });
+  try {
+    const [row] = parseCompanyNews(bors).filter(r => r.company.startsWith('KONGSBERG'));
+    await publishFlash(d.sql, noticeFlash(row, { now: Date.parse('2026-09-10T05:11:00Z') }));
+    const result = await (await d.app.load('lib/breaking/enrich.js')).enrichNext(d.sql);
+    assert.equal(fetched, 'https://live.euronext.com/en/ajax/node/company-press-release/114');
+    assert.equal(result.enriched, true);
+    const [article] = await d.sql`SELECT brodtekst, publisert_at FROM articles`;
+    assert.match(article.brodtekst, /Kilde: \[Børsmelding fra Kongsberg Gruppen\]\(https:\/\/live\.euronext\.com\/en\/listview\/company-press-release\/114\)/);
   } finally { await d.pg.close(); }
 });
