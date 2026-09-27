@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function time(value) {
   if (!value) return '';
@@ -37,7 +37,31 @@ function Destination({ item }) {
 }
 
 export default function LiveNewsRail({ items = [] }) {
-  const displayItems = items;
+  const [displayItems,setDisplayItems] = useState(items.slice(0,12));
+  useEffect(() => { setDisplayItems(items.slice(0,12)); }, [items]);
+  useEffect(() => {
+    let stopped=false, timer, controller, requestNumber=0;
+    async function refresh() {
+      clearTimeout(timer);
+      if (document.hidden) return;
+      controller?.abort();
+      const current=++requestNumber;
+      controller=new AbortController();
+      const ownController=controller;
+      const timeout=setTimeout(()=>ownController.abort(),10000);
+      try {
+        const response=await fetch('/api/live',{cache:'no-store',signal:controller.signal});
+        if (!response.ok) throw new Error('Live feed unavailable');
+        const data=await response.json();
+        if (!stopped && current===requestNumber && Array.isArray(data.items)) setDisplayItems(data.items.slice(0,12));
+      } catch { /* Retain the last successful feed during a temporary outage. */ }
+      finally { clearTimeout(timeout); if (!stopped && current===requestNumber) timer=setTimeout(refresh,30000); }
+    }
+    function visible() { if (!document.hidden) refresh(); }
+    refresh();
+    document.addEventListener('visibilitychange',visible);
+    return ()=>{stopped=true;clearTimeout(timer);controller?.abort();document.removeEventListener('visibilitychange',visible);};
+  }, []);
   const [expanded, setExpanded] = useState(false);
   const [dragging, setDragging] = useState(false);
   const scrollerRef = useRef(null);
@@ -109,7 +133,7 @@ export default function LiveNewsRail({ items = [] }) {
                 <div className="liveRailStoryHead">
                   <h3>{item.headline || item.tekst}</h3>
                   <div className="liveRailStoryMeta">
-                    <time>{time(item.tidspunkt)}</time>
+                    <time dateTime={item.tidspunkt}>{time(item.tidspunkt)}</time>
                     {item.seksjon ? <span>{item.seksjon}</span> : null}
                   </div>
                 </div>

@@ -37,7 +37,7 @@ jobs:
           call_step() {
             curl --fail --silent --show-error \
               --retry 2 --retry-all-errors --retry-delay 4 \
-              --max-time 65 \
+              --max-time 290 \
               -H "Authorization: Bearer $CRON_SECRET" \
               "$1"
           }
@@ -54,7 +54,7 @@ jobs:
               reason="$(echo "$response" | jq -r '.reason // "skipped"')"
               echo "Live-puls hoppet over: $reason"
 
-              if [ "$reason" = "automation_disabled" ] || [ "$reason" = "outside_editorial_hours" ]; then
+              if [ "$reason" = "automation_disabled" ] || [ "$reason" = "outside_active_hours" ]; then
                 exit 0
               fi
             else

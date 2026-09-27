@@ -15,7 +15,9 @@ export async function GET() {
     const [editorial] = await sql`SELECT
       to_regclass('public.editorial_cases') IS NOT NULL AS schema_ready,
       to_regprocedure('public.editorial_assert_publication(bigint,uuid,jsonb,jsonb)') IS NOT NULL AS publication_guard_ready`;
-    return Response.json({ ok: true, version, database: 'connected', counts: row,
+    const [engine] = await sql`SELECT to_regclass('public.engine_jobs') IS NOT NULL AS schema_ready,
+      to_regprocedure('public.engine_assert_lease(bigint,uuid)') IS NOT NULL AS lease_guard_ready`;
+    return Response.json({ ok: true, engine:{...engine,scheduler:process.env.NEWS_SCHEDULER==='vercel'?'vercel':'github'}, version, database: 'connected', counts: row,
       editorial: { ...editorial, mode: process.env.EDITORIAL_AUTOPUBLISH_V1 === 'true' ? 'autopublish_enabled_by_environment' : 'review' } });
   } catch (error) {
     return Response.json({ ok: false, version, database: 'error' }, { status: 500 });

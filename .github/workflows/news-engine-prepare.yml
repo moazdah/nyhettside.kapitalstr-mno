@@ -1,0 +1,44 @@
+name: Prepare tested news engine schema
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/reliable-news-engine]
+    paths: ['.github/workflows/news-engine-prepare.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: kapitalstrom-news-engine-prepare
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Require successful isolated validation of the same code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_RUN: '36266370923'
+          TESTED_SHA: 640b808315a96a84fd1cdd39b5b007154543f226
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const response=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.TESTED_RUN}`,{headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`}});
+          assert.ok(response.ok,'TEST_RUN_UNREADABLE');
+          const run=await response.json();
+          assert.equal(run.conclusion,'success','ISOLATED_VALIDATION_REQUIRED');
+          assert.equal(run.head_sha,process.env.TESTED_SHA,'TESTED_COMMIT_MISMATCH');
+          JS
+          git diff --exit-code "$TESTED_SHA" HEAD -- app lib migrations tests scripts package.json package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Add the verified job schema while preserving existing automation settings
+        env:
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+        run: node scripts/prepare-news-engine.mjs
