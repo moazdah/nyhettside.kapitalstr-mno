@@ -1,0 +1,30 @@
+name: Breaking desk readiness
+on:
+  push:
+    branches: [codex/breaking-news-desk]
+    paths: ['.github/workflows/breaking-readiness.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Read incident timestamps and scheduling plan
+        env:
+          DATABASE_URL: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          import {neon} from '@neondatabase/serverless';
+          const sql=neon(process.env.DATABASE_URL);
+          const [articles]=await sql.transaction([sql`SELECT id,tittel,status,created_at,publisert_at,ai_modell,kilde_url FROM articles WHERE (tittel ILIKE '%Norges Bank%' OR tittel ILIKE '%styringsrente%') AND created_at>='2026-09-23' ORDER BY created_at`],{readOnly:true});
+          console.log(JSON.stringify({articles}));
+          const response=await fetch('https://api.vercel.com/v2/teams/team_RbPY2JdK0IeLUf78YlfJUaxg',{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
+          const team=await response.json();
+          console.log(JSON.stringify({vercelReadStatus:response.status,plan:team.billing?.plan||team.team?.billing?.plan||null}));
+          JS
