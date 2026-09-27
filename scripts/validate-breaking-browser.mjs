@@ -19,7 +19,8 @@ try {
  assert.equal(await page.locator('.frontLeadCopy h1').textContent(),evidence.headline);
  const api=await page.request.get('/api/breaking');assert.match(api.headers()['cache-control'],/no-store/);
  await page.locator('.breakingBanner a').click();
- await page.getByRole('heading',{name:evidence.headline,exact:true}).waitFor();
+ await page.waitForURL(`**/artikkel/${flash.slug}`);
+ await page.getByRole('heading',{name:evidence.headline,exact:true,level:1}).waitFor();
  await page.getByText('Oppdateres automatisk',{exact:true}).waitFor();
  const published=await page.locator('.articleMeta').textContent();
  await page.getByText('Saken oppsummert',{exact:true}).click();
