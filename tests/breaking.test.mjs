@@ -76,3 +76,10 @@ test('Unsupported generated numbers cannot replace the verified flash',async()=>
   const [article]=await d.sql`SELECT * FROM articles`;assert.doesNotMatch(article.brodtekst,/7,50/);
  } finally {await d.pg.close();}
 });
+
+test('Official parser accepts unchanged and cut decisions with integer rates',()=>{
+ const unchanged=`<h1>Styringsrenten holdes uendret på 4 prosent</h1><p>Komiteen besluttet å holde styringsrenten uendret på 4 prosent.</p>`;
+ assert.equal(parseDecision(unchanged,{url,publishedAt,now}).direction,'unchanged');
+ const cut=`<h1>Styringsrenten settes ned til 4 prosent</h1><p>Komiteen besluttet å sette styringsrenten ned fra 4,25 til 4 prosent.</p>`;
+ assert.equal(parseDecision(cut,{url,publishedAt,now}).direction,'down');
+});
