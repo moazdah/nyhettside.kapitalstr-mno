@@ -1,0 +1,61 @@
+name: Breaking desk isolated validation
+on:
+  push:
+    branches: [codex/breaking-news-desk]
+    paths: ['.github/workflows/breaking-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kapitalstrom-breaking-validation
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Read current deployment scheduling capability
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch('https://api.vercel.com/v13/deployments/dpl_sRbhdRbW7fm4Ezkurv8XrcA6a8ou?teamId=team_RbPY2JdK0IeLUf78YlfJUaxg',{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
+          const d=await r.json();console.log(JSON.stringify({deploymentStatus:r.status,plan:d.plan,crons:d.crons,error:d.error?.code}));
+          JS
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - name: Official source, isolated Neon and real AI verification
+        env:
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: node --experimental-vm-modules scripts/validate-breaking-neon.mjs
+      - run: npm run build
+      - run: npm install --no-save --package-lock=false playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Verify new flash and updating article in an open browser
+        env:
+          DATABASE_URL: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+          CRON_SECRET: breaking-ci-only
+        run: |
+          npm start > server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://localhost:3000/api/breaking > /dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/validate-breaking-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: breaking-browser-evidence
+          path: |
+            breaking-desktop.png
+            breaking-article-mobile.png
