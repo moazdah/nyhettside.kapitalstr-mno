@@ -40,7 +40,7 @@ try {
   await page.goto('http://localhost:3000/redaksjon?tab=radar',{waitUntil:'networkidle'});
   await page.getByRole('heading',{name:'Nyhetsmotor og publisering'}).waitFor();
   await page.getByText('Siste vellykkede puls:',{exact:false}).waitFor();
-  await page.getByText('Gjennomgangsmodus: Fullartikler krever din godkjenning.',{exact:true}).waitFor();
+  await page.getByText('Publiserer maskinvaliderte fullartikler. AV sender dem til gjennomgang.',{exact:true}).waitFor();
   assert.deepEqual(errors,[]);
   assert.equal((await page.request.get('/api/cron/engine')).status(),401);
   const inactive=await page.request.get('/api/cron/engine',{headers:{Authorization:'Bearer engine-ci-only'}});
