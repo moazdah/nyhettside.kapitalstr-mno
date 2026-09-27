@@ -41,9 +41,13 @@ try {
  assert.equal((await page.request.get('/api/cron/breaking')).status(),401);
  assert.equal((await page.request.get('/api/cron/breaking-enrich')).status(),401);
  await page.goto('/redaksjon?tab=radar',{waitUntil:'networkidle'});
+ assert.equal(new URL(page.url()).pathname,'/redaksjon/login');
+ await page.getByLabel('Passord',{exact:true}).fill('breaking-browser-test-only');
+ await page.getByRole('button',{name:'Logg inn',exact:true}).click();
+ await page.waitForURL('**/redaksjon?tab=radar');
  await page.getByRole('heading',{name:'Hurtigdesk · Norges Bank'}).waitFor();
  assert.equal(await page.getByText('Gjennomgangsmodus: Fullartikler krever din godkjenning.',{exact:true}).count(),0);
  assert.deepEqual(errors,[]);
- console.log(JSON.stringify({ok:true,newFlashWithoutReload:true,sameArticleUpdates:true,summary:true,priority:true,expiry:true,reducedMotion:true,mobile:true,noPageErrors:true}));
+ console.log(JSON.stringify({ok:true,newFlashWithoutReload:true,sameArticleUpdates:true,summary:true,priority:true,expiry:true,reducedMotion:true,mobile:true,adminAuthentication:true,noPageErrors:true}));
 } catch(error) {console.error(JSON.stringify({ok:false,message:String(error.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[REDACTED]').slice(0,500)}));process.exitCode=1;}
 finally {await browser?.close();await cleanup(sql,evidence.url);}
