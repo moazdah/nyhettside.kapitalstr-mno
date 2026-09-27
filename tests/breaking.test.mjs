@@ -56,7 +56,7 @@ test('Failed enrichment keeps the flash live; retry updates the same article wit
   calls++;
   if(calls===1) throw new Error('provider unavailable');
   if(calls===2) return {json:{paragraphs,summary:paragraphs}};
-  return {json:{passed:true,checks:Array.from({length:6},(_,id)=>({id,supported:true,evidence:source}))}};
+  return {json:{passed:true,checks:Array.from({length:6},(_,id)=>({id,supported:true,source_ids:['S1']}))}};
  }});
  try {
   const first=await publishFlash(d.sql,decision());
@@ -74,7 +74,7 @@ test('Failed enrichment keeps the flash live; retry updates the same article wit
  } finally {await d.pg.close();}
 });
 test('Unsupported generated numbers cannot replace the verified flash',async()=>{
- const d=await setup({ai:async options=>options.label.includes('kontroll')?{json:{passed:true,checks:Array.from({length:6},(_,id)=>({id,supported:true,evidence:source}))}}:{json:{paragraphs:['Norges Bank hever styringsrenten til 7,50 prosent.','Norges Bank opplyser at prisveksten fortsatt er for høy.','Komiteen vurderer at en høyere rente er nødvendig.'],summary:Array(3).fill('Norges Bank opplyser at prisveksten er for høy.')}}});
+ const d=await setup({ai:async options=>options.label.includes('kontroll')?{json:{passed:true,checks:Array.from({length:6},(_,id)=>({id,supported:true,source_ids:['S1']}))}}:{json:{paragraphs:['Norges Bank hever styringsrenten til 7,50 prosent.','Norges Bank opplyser at prisveksten fortsatt er for høy.','Komiteen vurderer at en høyere rente er nødvendig.'],summary:Array(3).fill('Norges Bank opplyser at prisveksten er for høy.')}}});
  try {
   await publishFlash(d.sql,decision());const worker=await d.app.load('lib/breaking/enrich.js');
   await assert.rejects(worker.enrichNext(d.sql),/NUMBER_NOT_IN_SOURCE/);
@@ -96,5 +96,16 @@ test('Pausing the live rail does not prevent an independently enabled breaking a
   const flash=await publishFlash(d.sql,decision());
   assert.ok(flash.article_id);
   assert.equal((await d.sql`SELECT * FROM feed WHERE status='live'`).length,0);
+ } finally {await d.pg.close();}
+});
+
+test('A model cannot invent evidence identifiers to approve an enrichment',async()=>{
+ const d=await setup({ai:async options=>options.label.includes('kontroll')?
+  {json:{passed:true,checks:Array.from({length:6},(_,id)=>({id,supported:true,source_ids:['S999999']}))}}:
+  {json:{paragraphs:Array(3).fill(decision().fact),summary:Array(3).fill(decision().fact)}}});
+ try {
+  await publishFlash(d.sql,decision());const worker=await d.app.load('lib/breaking/enrich.js');
+  await assert.rejects(worker.enrichNext(d.sql),/ENRICHMENT_EVIDENCE_MISSING/);
+  assert.equal((await d.sql`SELECT * FROM breaking_revisions`).length,1);
  } finally {await d.pg.close();}
 });
