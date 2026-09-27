@@ -1,5 +1,5 @@
 name: Breaking desk isolated validation
-# Revalidate independent live switch and inspect strict source evidence checks.
+# Revalidate official HTML entity decoding without weakening evidence checks.
 on:
   push:
     branches: [codex/breaking-news-desk]
