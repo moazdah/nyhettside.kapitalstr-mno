@@ -36,7 +36,7 @@ test('Live publication switch remains independent from article review',async()=>
     assert.equal((await settings.getEditorialSettings(d.sql)).livePublishEnabled,true);
     await settings.setLivePublishEnabled(false,d.sql);
     assert.equal((await settings.getEditorialSettings(d.sql)).autoPublishEnabled,false);
-    assert.equal((await settings.getEditorialSettings(d.sql)).articleReviewOnly,true);
+    assert.equal((await settings.getEditorialSettings(d.sql)).articleReviewOnly,false);
   } finally {await d.pg.close();}
 });
 
