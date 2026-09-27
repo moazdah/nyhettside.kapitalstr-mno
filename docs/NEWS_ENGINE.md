@@ -1,5 +1,9 @@
 # Pålitelig nyhetsmotor
 
+**Oppdatert 27. september:** Automatisk publisering er nå brukerens valgte modus.
+Se `BREAKING_DESK.md` for gjeldende brytere og aktivering. Gjennomgangsmodus og
+`EDITORIAL_AUTOPUBLISH_V1` nedenfor beskriver den tidligere utrullingen.
+
 Denne endringen beholder GitHub-planene og dagens horisontale live-bar. Fullartikler
 forblir i gjennomgangsmodus (`EDITORIAL_AUTOPUBLISH_V1=false`). Live-meldinger har en
 separat innstilling i admin, `live_publish_enabled`, på som standard. Hovedbryteren
