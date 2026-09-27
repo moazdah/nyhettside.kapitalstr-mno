@@ -11,10 +11,11 @@ export default async function BreakingDeskHealth() {
   sql`SELECT automation_enabled,auto_publish_enabled,breaking_publish_enabled FROM editorial_settings WHERE id=1`,
  ]);
  const enabled=settings?.automation_enabled&&settings.auto_publish_enabled&&settings.breaking_publish_enabled;
- const delayed=enabled&&(!watch?.last_success_at||Date.now()-new Date(watch.last_success_at)>10*60000);
+ const now=new Date(),withinWatchHours=now.getUTCDay()>=1&&now.getUTCDay()<=5&&now.getUTCHours()>=6&&now.getUTCHours()<=16;
+ const delayed=enabled&&withinWatchHours&&(!watch?.last_success_at||Date.now()-new Date(watch.last_success_at)>10*60000);
  return <section className="adminNote"><h2>Hurtigdesk · Norges Bank</h2>
   <p>{enabled?'Automatisk publisering er på.':'Hurtigpublisering er pauset.'} Kort melding publiseres før AI-utdypingen.</p>
-  <p>Siste vellykkede kildesjekk: {watch?.last_success_at?fullDate(watch.last_success_at):'Ikke registrert'}.</p>
+  <p>{!withinWatchHours&&'Utenfor rentevaktens åpningstid. '}Siste vellykkede kildesjekk: {watch?.last_success_at?fullDate(watch.last_success_at):'Ikke registrert'}.</p>
   {delayed&&<p role="alert" style={{color:'#b32125'}}>Kildesjekken er mer enn 10 minutter forsinket eller har ikke startet.</p>}
   {watch?.last_error&&<p role="alert">Kildefeil: {watch.last_error}</p>}
   {event?<><b>{event.headline}</b><p>Kilden publiserte: {fullDate(event.source_published_at)}<br/>
