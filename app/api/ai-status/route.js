@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE, validAdminSession } from '../../../lib/auth';
 import { db } from '../../../lib/db';
 import { ensureRawItemScoringSchema } from '../../../lib/ai/score-raw-items';
 
@@ -16,11 +18,12 @@ function deploymentMeta() {
 }
 
 export async function GET() {
+  if (!await validAdminSession((await cookies()).get(SESSION_COOKIE)?.value)) {
+    return NextResponse.json({ok:false,error:'unauthorized'},{status:401,headers:{'Cache-Control':'no-store'}});
+  }
   const apiKey = process.env.DEEPSEEK_API_KEY;
 
-  // TEMPORARY DEVELOPMENT DIAGNOSTIC:
-  // Redaksjonspanelet is intentionally open while the site is not live.
-  // Never return the secret value itself.
+  // Paid provider diagnostics are admin-only. Never return a secret value.
   if (!apiKey) {
     return NextResponse.json({
       ok: false,
