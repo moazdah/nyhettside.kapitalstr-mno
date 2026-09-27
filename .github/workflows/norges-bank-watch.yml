@@ -17,3 +17,13 @@ jobs:
           curl --fail --silent --show-error \
             -H "Authorization: Bearer $CRON_SECRET" \
             "https://nyhettside-kapitalstr-mno-ashy.vercel.app/api/cron/norges-bank"
+
+      - name: Expand the latest flash after independent verification
+        if: always()
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET"
+          curl --fail --silent --show-error --max-time 175 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://nyhettside-kapitalstr-mno-ashy.vercel.app/api/cron/breaking-enrich"
