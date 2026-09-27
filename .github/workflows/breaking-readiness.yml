@@ -9,18 +9,15 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Inspect public source excerpt retained by the isolated test
+      - name: Check presence of existing production admin password configuration
         env:
-          DATABASE_URL: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           node --input-type=module <<'JS'
-          import {neon} from '@neondatabase/serverless';
-          const sql=neon(process.env.DATABASE_URL);
-          const [rows]=await sql.transaction([sql`SELECT left(evidence->>'text',2500) AS source_excerpt FROM breaking_events ORDER BY id DESC LIMIT 1`],{readOnly:true});
-          console.log(JSON.stringify({publicSource:rows}));
+          const r=await fetch('https://api.vercel.com/v9/projects/prj_dt9X67WnEvEROT1WntALIWd5I68T/env?teamId=team_RbPY2JdK0IeLUf78YlfJUaxg',{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
+          const result=await r.json();
+          console.log(JSON.stringify({status:r.status,productionAdminPasswordConfigured:Array.isArray(result.envs)?result.envs.some(e=>e.key==='ADMIN_PASSWORD_HASH'&&e.target?.includes('production')):null}));
           JS
