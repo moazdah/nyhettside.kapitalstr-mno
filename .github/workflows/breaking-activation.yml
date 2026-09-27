@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: kapitalstrom-editorial-autopilot
+  group: kapitalstrom-breaking-activation
   cancel-in-progress: false
 jobs:
   activate:
