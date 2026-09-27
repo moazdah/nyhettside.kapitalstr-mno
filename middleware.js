@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
+import { SESSION_COOKIE, validAdminSession } from './lib/auth';
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // TEMPORARY DEVELOPMENT MODE:
-  // Redaksjonspanelet is intentionally open while the site is not live.
-  if (pathname.startsWith('/redaksjon/login')) {
-    return NextResponse.redirect(new URL('/redaksjon', request.url));
-  }
-
-  return NextResponse.next();
+  if (pathname === '/redaksjon/login') return NextResponse.next();
+  if (await validAdminSession(request.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
+  const target=new URL('/redaksjon/login',request.url);
+  target.searchParams.set('next',pathname+request.nextUrl.search);
+  return NextResponse.redirect(target);
 }
 
 export const config = {
