@@ -1,2 +1,4 @@
-// Preserve the existing scheduled endpoint while separating announcements from market data.
-export { dynamic, maxDuration, GET } from '../breaking/route';
+import { GET as watch } from '../breaking/route';
+export const dynamic='force-dynamic';
+export const maxDuration=60;
+export const GET=watch;
