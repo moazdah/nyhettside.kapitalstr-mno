@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { database,application } from './helpers/runtime.mjs';
-import { parseDecision,decisionLinks,isDecisionUrl } from '../lib/breaking/norges-bank.mjs';
+import { parseDecision,decisionLinks,isDecisionUrl,plain } from '../lib/breaking/norges-bank.mjs';
 import { publishFlash } from '../lib/breaking/store.mjs';
 import { claim } from '../lib/engine/jobs.mjs';
 const url='https://www.norges-bank.no/aktuelt/nyheter/Pressemeldinger/2026/2026-09-24-rente/';
@@ -10,6 +10,11 @@ const publishedAt='2026-09-24T08:00:00Z',now=Date.parse(publishedAt)+3000;
 const source='På møtet besluttet komiteen å sette styringsrenten opp fra 4,25 til 4,50 prosent. Prisveksten er fortsatt for høy. Komiteen vurderer at en høyere rente er nødvendig for å få prisveksten ned.';
 const html=`<meta property="article:published_time" content="${publishedAt}"><h1 class="visually-hidden">Norges Bank</h1><h1>Styringsrenten settes opp til 4,50 prosent</h1><p>${source}</p>`;
 const decision=()=>parseDecision(html,{url,publishedAt,now});
+test('Official source HTML entities are decoded before literal evidence comparison',()=>{
+ assert.equal(plain('P&aring; m&oslash;tet kom komit&eacute;en &ndash; &aelig;rlig &#229; &#xF8;.'),'På møtet kom komitéen – ærlig å ø.');
+ const encoded=html.replaceAll('å','&aring;').replaceAll('ø','&oslash;');
+ assert.equal(parseDecision(encoded,{url,publishedAt,now}).text,decision().text);
+});
 async function setup(options={}) {
  const d=await database(),app=application(d.sql,options);
  const settings=await app.load('lib/autopilot/editorial-settings.js');await settings.getEditorialSettings(d.sql);
