@@ -1,0 +1,26 @@
+name: Fast-track sources live check (read only)
+
+# Runs the real parsers against the live official sources. No database, no
+# publication, no AI. Verifies that SSB metadata discovery, JSON-stat parsing and
+# the Oslo Børs company-news list still match their current formats.
+on:
+  push:
+    branches: [claude/kapitalstrom-editorial-priority-h53f92]
+    paths: ['lib/breaking/**', 'scripts/check-fast-track-sources.mjs', '.github/workflows/fast-track-sources-check.yml']
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/check-fast-track-sources.mjs

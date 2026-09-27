@@ -5,5 +5,8 @@
       "*": false,
       "main": true
     }
-  }
+  },
+  "crons": [
+    {"path": "/api/cron/ops?notify=0", "schedule": "15 5 * * *"}
+  ]
 }

@@ -20,7 +20,7 @@ async function setup(options={}) {
  const settings=await app.load('lib/autopilot/editorial-settings.js');await settings.getEditorialSettings(d.sql);
  await d.pg.exec("CREATE TABLE feed(id bigserial primary key,tekst text,seksjon text,status text,tidspunkt timestamptz DEFAULT now());");
  await (await app.load('lib/live-update-schema.js')).ensureLiveUpdateSchema(d.sql);
- for(const file of ['002_news_engine.sql','003_breaking_desk.sql']) await d.pg.exec(await readFile(new URL('../migrations/'+file,import.meta.url),'utf8'));
+ for(const file of ['002_news_engine.sql','003_breaking_desk.sql','004_newsroom_desk.sql']) await d.pg.exec(await readFile(new URL('../migrations/'+file,import.meta.url),'utf8'));
  await d.sql`UPDATE editorial_settings SET breaking_publish_enabled=true WHERE id=1`;
  return {...d,app};
 }

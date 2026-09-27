@@ -54,6 +54,8 @@ hverdager 06–16 UTC, men oppstart kan bli vesentlig forsinket. Dette oppsettet
 ikke love publisering innen 60 sekunder fra kilden. Måling av rask behandling etter
 oppdagelse er ikke dokumentasjon på presis oppstart.
 
+Se `REDAKSJONELL_DESK.md` for gjeldende tidsstyring (minuttløkke på GitHub, flere kilder og aktivering på Vercel Pro).
+
 `vercel.cron-ready.json` er klargjort, men er ikke aktiv konfigurasjon. Etter valgt
 plan med minuttkjøring (Vercel Pro): erstatt `vercel.json` med dette innholdet,
 sett `NEWS_SCHEDULER=vercel`, behold CRON_SECRET og deploy. Verifiser hyppige vellykkede

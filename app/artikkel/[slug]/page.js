@@ -7,8 +7,13 @@ import { Header } from '../../components';
 import LiveNewsRail from '../../LiveNewsRail';
 import ArticleProse from '../../ArticleProse';
 import BreakingArticleStatus from '../../BreakingArticleStatus';
+import { normalizeSummary } from '../../../lib/desk/summary.mjs';
 
 export const dynamic = 'force-dynamic';
+
+function safeUrl(value) {
+  try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null; } catch { return null; }
+}
 
 function descriptionOf(article) {
   const raw = article?.undertittel || article?.brodtekst || '';
@@ -45,10 +50,12 @@ export async function generateMetadata({ params }) {
 
 export default async function ArticlePage({ params }) {
   const { slug } = await params;
-  const { article, feed, markets, related } = await getArticleData(slug);
+  const { article, feed, markets, related, sources } = await getArticleData(slug);
   if (!article) notFound();
 
   const canonical = `${SITE_URL}/artikkel/${article.slug}`;
+  const summary = normalizeSummary(article.summary_points).filter(point => point.kind === 'fact');
+  const hasAssessment = /(^|\n\n)AI-vurdering:/i.test(article.brodtekst || '');
   const published = new Date(article.publisert_at || article.created_at).toISOString();
   const newsArticle = {
     '@context': 'https://schema.org',
@@ -90,15 +97,19 @@ export default async function ArticlePage({ params }) {
             <div><b>Av {article.forfatter || 'Kapitalstrøm'}</b><br/><span>Publisert {fullDate(article.publisert_at || article.created_at)}</span>{article.updated_at && new Date(article.updated_at)>new Date(article.publisert_at) && <><br/><span>Oppdatert {fullDate(article.updated_at)}</span></>}</div>
             <div><button>Del</button><button>Lagre</button></div>
           </div>
-          {article.bilde_url && <figure>
-            <img src={article.bilde_url} alt="" className="articlePhoto" style={{width:'100%',height:'auto',display:'block',objectFit:'cover'}} />
-            {article.bilde_kreditt && <figcaption>{article.bilde_kreditt}</figcaption>}
+          {article.bilde_url && <figure className="articleFigure">
+            <img src={article.bilde_url} alt={article.image_alt || ''} className="articlePhoto" style={{width:'100%',height:'auto',display:'block',objectFit:'cover'}} />
+            {article.bilde_kreditt && <figcaption>{article.bilde_kreditt}{article.image_source_url && <> · <a href={article.image_source_url} target="_blank" rel="noopener noreferrer">Bruksrett</a></>}</figcaption>}
           </figure>}
-          {article.summary_points?.length>0 && <details className="articleSummary"><summary>Saken oppsummert</summary>
-            <ul>{article.summary_points.map((point,i)=><li key={i}>{point}</li>)}</ul>
-            <small>Automatisk oppsummering av de kildebekreftede opplysningene i saken.</small>
+          {summary.length>0 && <details className="articleSummary" open><summary>Saken oppsummert</summary>
+            <ul>{summary.map((point,i)=><li key={i}>{point.text}</li>)}</ul>
+            <small>Bekreftede fakta hentet fra kildene i saken.{hasAssessment && ' Kapitalstrøms AI-vurdering står separat og tydelig merket i teksten, og er ikke bekreftet fakta.'}</small>
           </details>}
           <ArticleProse body={article.brodtekst}/>
+          {sources?.length>0 && <section className="articleSources"><h2>Kilder i saken</h2><ul>
+            {sources.map(source=>{const url=safeUrl(source.url);return <li key={source.url}>{url?<a href={url} target="_blank" rel="noopener noreferrer">{source.title||source.source_name||new URL(url).hostname}</a>:source.title}
+              {source.source_name&&source.title&&<span> · {source.source_name}</span>}{source.role==='follow_up'&&<span> · senere omtale</span>}</li>;})}
+          </ul></section>}
         </article>
         <aside className="articleSidebar">
           <div className="sectionKicker relatedTitle">Relaterte saker</div>

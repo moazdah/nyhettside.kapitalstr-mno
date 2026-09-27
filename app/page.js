@@ -4,6 +4,7 @@ import { marketDelta, marketValue, relativeTime } from '../lib/format';
 import { Header } from './components';
 import LiveNewsRail from './LiveNewsRail';
 import BreakingBanner from './BreakingBanner';
+import StoryVisual from './StoryVisual';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,18 +13,7 @@ function StoryMeta({ article }) {
 }
 
 function StoryImage({ article, className = '' }) {
-  if (article?.bilde_url) {
-    return (
-      <div className={`frontStoryImage ${className}`}>
-        <img src={article.bilde_url} alt="" />
-      </div>
-    );
-  }
-  return (
-    <div className={`frontStoryImage frontStoryImageFallback ${className}`}>
-      <span>{article?.seksjon || 'Kapitalstrøm'}</span>
-    </div>
-  );
+  return <StoryVisual article={article} className={className} />;
 }
 
 function StoryCard({ article, size = 'normal' }) {

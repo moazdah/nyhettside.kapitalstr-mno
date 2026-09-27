@@ -77,6 +77,12 @@ for (const mode of ['success','missing-date','review-rejects','research-declines
       if(mode!=='review-rejects') {
         assert.equal((await getCase(db.sql,item.id)).state,'published');
         assert.equal((await db.sql`SELECT slug FROM articles WHERE id=${result.articleId}`)[0].slug,result.slug);
+        // «Saken oppsummert» comes only from the verified fact pack; the desk places the story.
+        const desk=await (await app.load('lib/autopilot/publishing.js')).applyDeskDecision(db.sql,result.articleId,item.id);
+        const [article]=await db.sql`SELECT summary_points,priority_score,placement,story_key FROM articles WHERE id=${result.articleId}`;
+        assert.deepEqual(article.summary_points.map(p=>[p.kind,p.text]),[['fact',sourceText]]);
+        assert.equal(article.placement,desk.placement);assert.equal(Number(article.priority_score),desk.score);assert.ok(article.story_key);
+        assert.equal((await db.sql`SELECT role FROM article_sources WHERE article_id=${result.articleId} AND role='primary'`).length,1);
       }
     } finally { await db.pg.close(); }
   });

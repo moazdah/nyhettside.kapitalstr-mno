@@ -90,5 +90,6 @@ export async function initialize(db, app) {
   await db.pg.exec(await readFile(resolve(root, 'migrations/001_editorial_cases.sql'), 'utf8'));
   await (await app.load('lib/autopilot/editorial-settings.js')).getEditorialSettings(db.sql);
   await db.pg.exec(await readFile(resolve(root, 'migrations/003_breaking_desk.sql'), 'utf8'));
+  await db.pg.exec(await readFile(resolve(root, 'migrations/004_newsroom_desk.sql'), 'utf8'));
   return { writer, selection };
 }

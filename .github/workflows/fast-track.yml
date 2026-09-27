@@ -1,0 +1,52 @@
+name: Kapitalstrøm hurtigspor
+
+# Official fast-track sources (Norges Bank, SSB, Oslo Børs), checked every minute.
+# GitHub may start scheduled runs late or skip one, so each run keeps a runner
+# alive for about 16 minutes and polls once a minute. Runs are queued, never in
+# parallel. When NEWS_SCHEDULER=vercel (Vercel Pro minute cron) the route answers
+# scheduler_replaced and this workflow stops immediately.
+on:
+  schedule:
+    - cron: '*/15 4-21 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: kapitalstrom-fast-track
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - name: Poll official sources once a minute and expand new flashes
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          BASE_URL: https://nyhettside-kapitalstr-mno-ashy.vercel.app
+        run: |
+          set -uo pipefail
+          test -n "$CRON_SECRET"
+          loops=16
+          if [ "${{ github.event_name }}" != "schedule" ]; then loops=1; fi
+          enrich_pid=""
+          failures=0
+          for i in $(seq 1 "$loops"); do
+            started="$(date +%s)"
+            response="$(curl --fail --silent --show-error --max-time 58 \
+              -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/breaking?scheduler=github")" || { failures=$((failures+1)); response='{}'; }
+            echo "$response" | jq -c '{skipped,reason,published:[.published[]?.headline],errors}' 2>/dev/null || echo "$response"
+            if [ "$(echo "$response" | jq -r '.reason // empty')" = "scheduler_replaced" ]; then exit 0; fi
+            if [ -z "$enrich_pid" ] || ! kill -0 "$enrich_pid" 2>/dev/null; then
+              ( curl --silent --show-error --max-time 175 -H "Authorization: Bearer $CRON_SECRET" \
+                "$BASE_URL/api/cron/breaking-enrich" | jq -c . ) &
+              enrich_pid=$!
+            fi
+            if [ "$i" -lt "$loops" ]; then
+              wait_s=$(( 60 - ( $(date +%s) - started ) ))
+              [ "$wait_s" -gt 0 ] && sleep "$wait_s"
+            fi
+          done
+          wait || true
+          # A single failed call is covered by the next minute; persistent problems are
+          # escalated by the ops watchdog. Fail only if every call in this run failed.
+          if [ "$failures" -ge "$loops" ]; then echo "::error::Hurtigsporet svarte ikke i hele kjøringen"; exit 1; fi

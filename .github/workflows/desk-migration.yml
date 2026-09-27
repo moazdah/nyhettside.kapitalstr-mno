@@ -1,0 +1,34 @@
+name: Prepare newsroom desk schema (migration 004)
+
+# Additive migration 004: first on the known isolated Neon test branch (with a
+# fast-track smoke test there), then on production. Publication switches and
+# article counts are verified unchanged. Must complete before merging the code.
+on:
+  push:
+    branches: [claude/kapitalstrom-editorial-priority-h53f92]
+    paths: ['migrations/004_newsroom_desk.sql', 'scripts/prepare-newsroom-desk.mjs', '.github/workflows/desk-migration.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kapitalstrom-desk-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - name: Apply to isolated test branch, smoke test, then production
+        env:
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+        run: node scripts/prepare-newsroom-desk.mjs

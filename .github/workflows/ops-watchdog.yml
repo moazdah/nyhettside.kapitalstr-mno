@@ -1,0 +1,35 @@
+name: Kapitalstrøm driftsvakt
+
+# Independent watchdog. Fails (so GitHub e-mails the repository owner) when a new
+# operations alert opens: a source down for a long time, retries exhausted, or a
+# stalled scheduler. Also fails when production itself does not answer.
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: kapitalstrom-ops-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate operations and deliver new alerts
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          BASE_URL: https://nyhettside-kapitalstr-mno-ashy.vercel.app
+        run: |
+          set -euo pipefail
+          test -n "$CRON_SECRET"
+          response="$(curl --fail --silent --show-error --retry 2 --retry-all-errors --retry-delay 10 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" "$BASE_URL/api/cron/ops")" || {
+            echo "::error::Produksjonens driftsendepunkt svarer ikke"; exit 1; }
+          echo "$response" | jq '{open:[.open[]? | {severity,title}], newAlerts, latency}'
+          count="$(echo "$response" | jq '.newAlerts | length')"
+          if [ "$count" -gt 0 ]; then
+            echo "$response" | jq -r '.newAlerts[] | "::error title=\(.severity)::\(.title)"'
+            exit 1
+          fi

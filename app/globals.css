@@ -634,3 +634,20 @@
 @keyframes breakingPulse{0%,100%{box-shadow:0 0 0 0 #c52a2e30}50%{box-shadow:0 0 0 5px #c52a2e08}}
 @media(prefers-reduced-motion:reduce){.breakingDot{animation:none}}
 @media(max-width:640px){.breakingBanner{padding:0 16px;margin-top:12px}.breakingBanner>a{gap:10px;flex-wrap:wrap;padding:14px}.breakingBanner strong{font-size:17px;flex-basis:100%}.breakingFollow{display:none}}
+
+/* Rights-cleared images and designed fallback visual */
+figure.frontStoryImage{margin:0;position:relative}
+.storyFallback{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:16px 18px;color:#f4f1ea;overflow:hidden}
+.storyFallback::after{content:'';position:absolute;inset:auto -12% -40% auto;width:70%;aspect-ratio:1;border-radius:50%;border:1px solid #ffffff2b;box-shadow:0 0 0 28px #ffffff0d,0 0 0 56px #ffffff08}
+.storyFallback-economy{background:linear-gradient(135deg,#123c3a,#1a6056)}
+.storyFallback-rates{background:linear-gradient(135deg,#1d2a44,#34507a)}
+.storyFallback-markets{background:linear-gradient(135deg,#1c252d,#3b4a55)}
+.storyFallback-companies{background:linear-gradient(135deg,#3a2a1c,#6b4a2c)}
+.storyFallback-analysis{background:linear-gradient(135deg,#2c2338,#50406a)}
+.storyFallbackSection,.storyFallbackBrand{position:relative;z-index:1;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.storyFallbackFigure{position:relative;z-index:1;font:700 clamp(34px,5vw,64px)/1 'IBM Plex Sans',sans-serif;letter-spacing:-.04em}
+.storyFallbackMark{position:relative;z-index:1;font:700 clamp(30px,4vw,52px)/1 'Newsreader',serif;opacity:.55}
+.articleFigure{margin:22px 0}.articleFigure figcaption{font-size:12px;color:var(--muted);margin-top:6px}.articleFigure figcaption a{color:inherit;text-decoration:underline}
+.articleSources{margin:36px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+.articleSources h2{font:600 12px 'IBM Plex Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.articleSources ul{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-size:14px}.articleSources span{color:var(--muted)}
