@@ -9,6 +9,7 @@ import AdminSubmitButton from './AdminSubmitButton';
 import AutopilotControl from './AutopilotControl';
 import ManualStoryButton from './ManualStoryButton';
 import EditorialAutomationControls from './EditorialAutomationControls';
+import BreakingDeskHealth from './BreakingDeskHealth';
 
 export const dynamic = 'force-dynamic';
 
@@ -197,7 +198,8 @@ export default async function RedaksjonPage({ searchParams }) {
           {active === 'kilder' && <Sources items={data.sources} policyRate={data.policyRate} rawItems={data.rawItems}/>} 
         </section>
         <aside className="adminAside">
-          <div className="adminNote"><b>Saksflyt</b><p>Følg utvelgelse, kildebevis, utkast og stoppårsaker i samme sak.</p><Link href="/redaksjon/saker">Åpne saksoversikten →</Link><p>{process.env.EDITORIAL_AUTOPUBLISH_V1 === 'true' ? 'Ny publiseringskontroll er aktiv.' : 'Ny motor er i gjennomgangsmodus og lager utkast.'}</p></div>
+          <BreakingDeskHealth/>
+          <div className="adminNote"><b>Saksflyt</b><p>Følg utvelgelse, kildebevis, utkast og stoppårsaker i samme sak.</p><Link href="/redaksjon/saker">Åpne saksoversikten →</Link><p>{data.editorialSettings.automationEnabled && data.editorialSettings.autoPublishEnabled ? 'Ny publiseringskontroll er aktiv.' : 'Ny motor er i gjennomgangsmodus og lager utkast.'}</p></div>
           <div className="adminStat"><span>Utkast i kø</span><strong>{data.queue.length}</strong></div>
           <div className="adminStat"><span>Radar-treff</span><strong>{data.radarItems.length}</strong></div>
           <div className="adminStat"><span>Publisert</span><strong>{data.published.length}</strong></div>
