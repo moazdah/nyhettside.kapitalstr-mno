@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {chromium} from 'playwright';
+import {isolatedDatabase,cleanup} from './validate-breaking-neon.mjs';
+import {publishFlash} from '../lib/breaking/store.mjs';
+const sql=isolatedDatabase(),evidence=JSON.parse(await readFile('breaking-source.json','utf8'));
+let browser;
+try {
+ await cleanup(sql,evidence.url);
+ browser=await chromium.launch({headless:true});
+ const page=await browser.newPage({baseURL:'http://localhost:3000',viewport:{width:1280,height:900}});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/',{waitUntil:'networkidle'});
+ assert.equal(await page.locator('.breakingBanner').count(),0);
+ const flash=await publishFlash(sql,evidence);
+ await page.locator('.breakingBanner').getByText(evidence.headline,{exact:true}).waitFor({timeout:20000});
+ await page.screenshot({path:'breaking-desktop.png'});
+ await page.reload({waitUntil:'networkidle'});
+ assert.equal(await page.locator('.frontLeadCopy h1').textContent(),evidence.headline);
+ const api=await page.request.get('/api/breaking');assert.match(api.headers()['cache-control'],/no-store/);
+ await page.locator('.breakingBanner a').click();
+ await page.getByRole('heading',{name:evidence.headline,exact:true}).waitFor();
+ await page.getByText('Oppdateres automatisk',{exact:true}).waitFor();
+ const published=await page.locator('.articleMeta').textContent();
+ await page.getByText('Saken oppsummert',{exact:true}).click();
+ assert.equal(await page.locator('.articleSummary li').count(),1);
+ const updated='Dette er en kontrollert nettlesertest av automatisk oppdatering.';
+ await sql`UPDATE articles SET brodtekst=${evidence.fact+'\n\n'+updated},updated_at=now(),summary_points=${JSON.stringify([evidence.fact,'Ny kildebekreftet opplysning.','Samme artikkeladresse.'])}::jsonb WHERE id=${Number(flash.article_id)}`;
+ await page.getByText(updated,{exact:true}).waitFor({timeout:20000});
+ assert.ok((await page.locator('.articleMeta').textContent()).includes(published.split('Del')[0]));
+ assert.equal(new URL(page.url()).pathname,`/artikkel/${flash.slug}`);
+ await page.setViewportSize({width:390,height:844});
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+ await page.screenshot({path:'breaking-article-mobile.png',fullPage:true});
+ await page.emulateMedia({reducedMotion:'reduce'});
+ assert.equal(await page.locator('.breakingDot').evaluate(el=>getComputedStyle(el).animationName),'none');
+ await sql`UPDATE articles SET breaking_until=now()-interval '1 second' WHERE id=${Number(flash.article_id)}`;
+ await page.locator('.breakingArticleStatus').waitFor({state:'detached',timeout:20000});
+ assert.equal((await page.request.get('/api/cron/breaking')).status(),401);
+ assert.equal((await page.request.get('/api/cron/breaking-enrich')).status(),401);
+ await page.goto('/redaksjon?tab=radar',{waitUntil:'networkidle'});
+ await page.getByRole('heading',{name:'Hurtigdesk · Norges Bank'}).waitFor();
+ assert.equal(await page.getByText('Gjennomgangsmodus: Fullartikler krever din godkjenning.',{exact:true}).count(),0);
+ assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({ok:true,newFlashWithoutReload:true,sameArticleUpdates:true,summary:true,priority:true,expiry:true,reducedMotion:true,mobile:true,noPageErrors:true}));
+} catch(error) {console.error(JSON.stringify({ok:false,message:String(error.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[REDACTED]').slice(0,500)}));process.exitCode=1;}
+finally {await browser?.close();await cleanup(sql,evidence.url);}
