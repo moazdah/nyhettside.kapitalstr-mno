@@ -83,3 +83,13 @@ test('Official parser accepts unchanged and cut decisions with integer rates',()
  const cut=`<h1>Styringsrenten settes ned til 4 prosent</h1><p>Komiteen besluttet å sette styringsrenten ned fra 4,25 til 4 prosent.</p>`;
  assert.equal(parseDecision(cut,{url,publishedAt,now}).direction,'down');
 });
+
+test('Pausing the live rail does not prevent an independently enabled breaking article',async()=>{
+ const d=await setup();
+ try {
+  await d.sql`UPDATE editorial_settings SET live_publish_enabled=false WHERE id=1`;
+  const flash=await publishFlash(d.sql,decision());
+  assert.ok(flash.article_id);
+  assert.equal((await d.sql`SELECT * FROM feed WHERE status='live'`).length,0);
+ } finally {await d.pg.close();}
+});
