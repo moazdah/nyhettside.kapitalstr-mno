@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { db } from '../../../lib/db';
+import { getEditorialSettings } from '../../../lib/autopilot/editorial-settings';
 import { requireEditorialSchema } from '../../../lib/editorial/store.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,7 @@ export default async function EditorialCasesPage() {
     if (error.code !== 'MIGRATION_REQUIRED') throw error;
     return <main className="adminShell"><div className="adminNote"><h1>Saksflyten er ikke aktivert</h1><p>{error.message}</p><Link href="/redaksjon">Til redaksjonen</Link></div></main>;
   }
+  const settings=await getEditorialSettings(sql);
   const rows = await sql`SELECT c.id, c.state, c.revision, c.article_id, c.updated_at, c.last_error,
     c.dossier #>> '{discovery,title}' AS title, c.dossier #>> '{selection,reason}' AS selection_reason,
     c.dossier #> '{research,reasons}' AS research_reasons, c.dossier #> '{verification,reasons}' AS verification_reasons,
@@ -24,7 +26,7 @@ export default async function EditorialCasesPage() {
     <div className="adminNote">
       <h1>Saker gjennom redaksjonen</h1>
       <p>Samme saksgrunnlag følger utvelgelse, research, utkast og publisering. Viser de 50 sist oppdaterte sakene.</p>
-      <p>{process.env.EDITORIAL_AUTOPUBLISH_V1 === 'true' ? 'Ny publiseringskontroll er aktiv. Autopublisering krever også at bryteren i redaksjonen er på.' : 'Gjennomgangsmodus: den nye motoren lager utkast. Automatisk publisering er slått av for denne løypen.'}</p>
+      <p>{settings.automationEnabled && settings.autoPublishEnabled ? 'Ny publiseringskontroll er aktiv. Autopublisering krever også at bryteren i redaksjonen er på.' : 'Gjennomgangsmodus: den nye motoren lager utkast. Automatisk publisering er slått av for denne løypen.'}</p>
     </div>
     {rows.map(row => <article className="adminNote" key={row.id}>
       <p>Sak {row.id} · {labels[row.state]} · versjon {row.revision}</p>

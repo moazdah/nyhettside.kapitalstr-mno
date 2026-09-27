@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {"deploymentEnabled": {"*": false, "main": true}},
+  "crons": [
+    {"path": "/api/cron/breaking", "schedule": "* 6-16 * * 1-5"},
+    {"path": "/api/cron/breaking-enrich", "schedule": "* 6-16 * * 1-5"},
+    {"path": "/api/cron/engine", "schedule": "* * * * *"}
+  ]
+}

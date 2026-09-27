@@ -191,3 +191,17 @@ test('Round status uses the scoring cutoff and closes without processing another
   assert.equal(result.stage,'done');
   assert.equal((await sql`SELECT status FROM editorial_runs WHERE id=${run.id}`)[0].status,'done');
 });
+
+test('Validated articles publish automatically; database pause wins over a stale worker setting',async()=>{
+ const f=await seeded({reviewed:true});
+ const published=await publishCaseArticle(db.sql,f.article.id,{runId:f.run.id,autoPublishEnabled:true});
+ assert.equal(published.published,true);
+ assert.equal((await getCase(db.sql,f.item.id)).state,'published');
+ const other=await seeded({reviewed:true});
+ await db.sql`UPDATE editorial_settings SET auto_publish_enabled=false WHERE id=1`;
+ try {
+  await assert.rejects(publishCaseArticle(db.sql,other.article.id,{runId:other.run.id,autoPublishEnabled:true}),/AUTOMATIC_PUBLICATION_DISABLED/);
+  const [article]=await db.sql`SELECT status,publisert_at FROM articles WHERE id=${other.article.id}`;
+  assert.equal(article.status,'draft');assert.equal(article.publisert_at,null);
+ } finally {await db.sql`UPDATE editorial_settings SET auto_publish_enabled=true WHERE id=1`;}
+});

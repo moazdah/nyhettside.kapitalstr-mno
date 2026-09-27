@@ -1,4 +1,5 @@
 import { db } from '../../../lib/db';
+import { getEditorialSettings } from '../../../lib/autopilot/editorial-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -6,6 +7,8 @@ export async function GET() {
   const version = process.env.VERCEL_GIT_COMMIT_SHA || process.env.APP_COMMIT_SHA || null;
   try {
     const sql = db();
+    const settings=await getEditorialSettings(sql);
+    const [breaking]=await sql`SELECT breaking_publish_enabled AS enabled FROM editorial_settings WHERE id=1`;
     const [row] = await sql`
       SELECT
         (SELECT COUNT(*)::int FROM articles) AS articles,
@@ -18,7 +21,7 @@ export async function GET() {
     const [engine] = await sql`SELECT to_regclass('public.engine_jobs') IS NOT NULL AS schema_ready,
       to_regprocedure('public.engine_assert_lease(bigint,uuid)') IS NOT NULL AS lease_guard_ready`;
     return Response.json({ ok: true, engine:{...engine,scheduler:process.env.NEWS_SCHEDULER==='vercel'?'vercel':'github'}, version, database: 'connected', counts: row,
-      editorial: { ...editorial, mode: process.env.EDITORIAL_AUTOPUBLISH_V1 === 'true' ? 'autopublish_enabled_by_environment' : 'review' } });
+      breaking, editorial: { ...editorial, mode: settings.automationEnabled && settings.autoPublishEnabled ? 'automatic' : 'review' } });
   } catch (error) {
     return Response.json({ ok: false, version, database: 'error' }, { status: 500 });
   }

@@ -36,7 +36,7 @@ test('Live publication switch remains independent from article review',async()=>
     assert.equal((await settings.getEditorialSettings(d.sql)).livePublishEnabled,true);
     await settings.setLivePublishEnabled(false,d.sql);
     assert.equal((await settings.getEditorialSettings(d.sql)).autoPublishEnabled,false);
-    assert.equal((await settings.getEditorialSettings(d.sql)).articleReviewOnly,true);
+    assert.equal((await settings.getEditorialSettings(d.sql)).articleReviewOnly,false);
   } finally {await d.pg.close();}
 });
 
@@ -77,6 +77,7 @@ test('Live stages resume a failed score and never repeat a committed publication
       'lib/ai/score-radar-items.js':{scorePendingRadarItems:async()=>{if(++scoring===1) throw new Error('temporary');return {scored:2};}},
       'lib/live-updates.js':{syncLiveUpdatesFromRecentRadar:async options=>{assert.equal(options.autoPublish,true);published++;return {created:1,errors:[]};}},
       'lib/sources/norges-bank.js':{syncNorgesBankFx:async()=>[{}]},
+      'lib/sources/norges-bank-policy-rate.js':{syncNorgesBankPolicyRate:async()=>({})},
       'lib/sources/global-markets.js':{syncGlobalMarkets:async()=>({updated:1,errors:[]})},
     }});
     const engine=await app.load('lib/engine/live.js');

@@ -1,0 +1,26 @@
+name: Activate tested automatic news desk
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/breaking-activation.yml', 'scripts/activate-breaking-desk.mjs']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kapitalstrom-breaking-activation
+  cancel-in-progress: false
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Wait for exact production build, then activate and check the official watcher
+        env:
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node scripts/activate-breaking-desk.mjs
