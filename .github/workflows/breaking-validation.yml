@@ -1,5 +1,5 @@
 name: Breaking desk isolated validation
-# Verify restored existing admin authentication and automatic news independently.
+# Verify admin authentication also prevents anonymous paid API diagnostics.
 on:
   push:
     branches: [codex/breaking-news-desk]
