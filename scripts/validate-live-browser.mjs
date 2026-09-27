@@ -38,6 +38,9 @@ try {
   assert.deepEqual(errors,[]);
   await page.screenshot({path:'live-rail-mobile.png'});
   await page.goto('http://localhost:3000/redaksjon?tab=radar',{waitUntil:'networkidle'});
+  await page.getByLabel('Passord',{exact:true}).fill('breaking-browser-test-only');
+  await page.getByRole('button',{name:'Logg inn',exact:true}).click();
+  await page.waitForURL('**/redaksjon?tab=radar');
   await page.getByRole('heading',{name:'Nyhetsmotor og publisering'}).waitFor();
   await page.getByText('Siste vellykkede puls:',{exact:false}).waitFor();
   await page.getByText('Publiserer maskinvaliderte fullartikler. AV sender dem til gjennomgang.',{exact:true}).waitFor();
