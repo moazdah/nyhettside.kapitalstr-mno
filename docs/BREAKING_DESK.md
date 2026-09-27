@@ -7,6 +7,11 @@ Hovedbryter og artikkelbryter kontrolleres også inne i publiseringstransaksjone
 Eksisterende kilde-, ferskhets-, faktapakke- og uavhengige utkastkontroller består.
 Avslag gir ingen publisering. Gamle utkast massepubliseres ikke.
 
+Eksisterende admin-innlogging er gjenaktivert før automatisk drift. Produksjonens
+ADMIN_PASSWORD_HASH var allerede konfigurert og er ikke endret. Middleware beskytter
+redaksjonssidene, og hver muterende admin-handling kontrollerer sesjonen på serveren.
+Manglende passordkonfigurasjon avviser tilgang. Cron-jobbene bruker fortsatt CRON_SECRET.
+
 ## Første hendelsestype: Norges Banks rentevedtak
 
 Den faste, offisielle pressemeldingsfeeden leverer originalt publiseringstidspunkt.
