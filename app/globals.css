@@ -630,7 +630,7 @@
 .breakingBanner strong{font-size:19px;line-height:1.35}.breakingFollow{margin-left:auto;white-space:nowrap;font-size:12px}
 .breakingArticleStatus{display:flex;align-items:center;gap:16px;margin:18px 0 12px;font-size:12px;color:#686868}
 .articleSummary{margin:24px 0;padding:18px 22px;background:#f4f6f5;border-left:3px solid #1a6056;line-height:1.65}
-.articleSummary summary{cursor:pointer;font-weight:700}.articleSummary ul{padding-left:20px;margin:12px 0}.articleSummary small{color:#656b68}
+.articleSummary summary{cursor:pointer;font-weight:700}.articleSummary ul{list-style:disc;padding-left:20px;margin:12px 0}.articleSummary li+li{margin-top:6px}.articleSummary small{color:#656b68}
 @keyframes breakingPulse{0%,100%{box-shadow:0 0 0 0 #c52a2e30}50%{box-shadow:0 0 0 5px #c52a2e08}}
 @media(prefers-reduced-motion:reduce){.breakingDot{animation:none}}
 @media(max-width:640px){.breakingBanner{padding:0 16px;margin-top:12px}.breakingBanner>a{gap:10px;flex-wrap:wrap;padding:14px}.breakingBanner strong{font-size:17px;flex-basis:100%}.breakingFollow{display:none}}
