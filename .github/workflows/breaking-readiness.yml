@@ -13,15 +13,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Inspect official source format and project access
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Inspect public source excerpt retained by the isolated test
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DATABASE_URL: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
         run: |
           node --input-type=module <<'JS'
-          for(const url of ['https://www.norges-bank.no/RSS/Pressemeldinger---Norges-Bank/','https://www.norges-bank.no/aktuelt/nyheter/Pressemeldinger/2026/2026-09-24-rente/']) {
-            const r=await fetch(url,{redirect:'error',headers:{'User-Agent':'KapitalstromNewsDesk/1.0'}}); const t=await r.text();
-            console.log(JSON.stringify({url,status:r.status,metadata:[...t.matchAll(/<meta[^>]*(?:published|date)[^>]*>/gi)].map(m=>m[0]),h1:t.match(/<h1[\s\S]*?<\/h1>/i)?.[0],rss:t.includes('<rss')?t.slice(0,18000):null}));
-          }
-          const r=await fetch('https://api.vercel.com/v9/projects/prj_dt9X67WnEvEROT1WntALIWd5I68T?teamId=team_RbPY2JdK0IeLUf78YlfJUaxg',{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
-          const p=await r.json();console.log(JSON.stringify({projectStatus:r.status,error:p.error?.code,resourceConfig:p.resourceConfig}));
+          import {neon} from '@neondatabase/serverless';
+          const sql=neon(process.env.DATABASE_URL);
+          const [rows]=await sql.transaction([sql`SELECT left(evidence->>'text',2500) AS source_excerpt FROM breaking_events ORDER BY id DESC LIMIT 1`],{readOnly:true});
+          console.log(JSON.stringify({publicSource:rows}));
           JS
