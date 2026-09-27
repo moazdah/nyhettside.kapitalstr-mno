@@ -1,0 +1,44 @@
+name: Prepare validated breaking desk schema
+on:
+  push:
+    branches: [codex/breaking-news-desk]
+    paths: ['.github/workflows/breaking-prepare.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: kapitalstrom-breaking-prepare
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Require successful isolated acceptance checks on identical application code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_RUN: '36333535501'
+          TESTED_SHA: cec8e4b39e2545e89f112889ad294e02db0d5874
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.TESTED_RUN}`,{headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`}});
+          assert.ok(r.ok,'TEST_RUN_UNREADABLE');
+          const run=await r.json();
+          assert.equal(run.conclusion,'success','ISOLATED_VALIDATION_REQUIRED');
+          assert.equal(run.head_sha,process.env.TESTED_SHA,'TESTED_COMMIT_MISMATCH');
+          JS
+          git diff --exit-code "$TESTED_SHA" HEAD -- app lib migrations tests scripts package.json package-lock.json vercel.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply identical tested additive migration, preserve publication switches
+        env:
+          EDITORIAL_TEST_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_TEST_DATABASE_URL_UNPOOLED }}
+          EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
+        run: node scripts/prepare-breaking-desk.mjs
