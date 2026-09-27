@@ -13,18 +13,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Read incident timestamps and scheduling plan
+      - name: Inspect official source format and project access
         env:
-          DATABASE_URL: ${{ secrets.EDITORIAL_PRODUCTION_DATABASE_URL_UNPOOLED }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           node --input-type=module <<'JS'
-          import {neon} from '@neondatabase/serverless';
-          const sql=neon(process.env.DATABASE_URL);
-          const [articles]=await sql.transaction([sql`SELECT id,tittel,status,created_at,publisert_at,ai_modell,kilde_url FROM articles WHERE (tittel ILIKE '%Norges Bank%' OR tittel ILIKE '%styringsrente%') AND created_at>='2026-09-23' ORDER BY created_at`],{readOnly:true});
-          console.log(JSON.stringify({articles}));
-          const response=await fetch('https://api.vercel.com/v2/teams/team_RbPY2JdK0IeLUf78YlfJUaxg',{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
-          const team=await response.json();
-          console.log(JSON.stringify({vercelReadStatus:response.status,plan:team.billing?.plan||team.team?.billing?.plan||null}));
+          for(const url of ['https://www.norges-bank.no/RSS/Pressemeldinger---Norges-Bank/','https://www.norges-bank.no/aktuelt/nyheter/Pressemeldinger/2026/2026-09-24-rente/']) {
+            const r=await fetch(url,{redirect:'error',headers:{'User-Agent':'KapitalstromNewsDesk/1.0'}}); const t=await r.text();
+            console.log(JSON.stringify({url,status:r.status,metadata:[...t.matchAll(/<meta[^>]*(?:published|date)[^>]*>/gi)].map(m=>m[0]),h1:t.match(/<h1[\s\S]*?<\/h1>/i)?.[0],rss:t.includes('<rss')?t.slice(0,18000):null}));
+          }
+          const r=await fetch('https://api.vercel.com/v9/projects/prj_dt9X67WnEvEROT1WntALIWd5I68T?teamId=team_RbPY2JdK0IeLUf78YlfJUaxg',{headers:{Authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
+          const p=await r.json();console.log(JSON.stringify({projectStatus:r.status,error:p.error?.code,resourceConfig:p.resourceConfig}));
           JS
