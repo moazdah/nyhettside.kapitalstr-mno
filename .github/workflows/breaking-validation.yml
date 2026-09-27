@@ -1,5 +1,5 @@
 name: Breaking desk isolated validation
-# Resolve numbered evidence to exact source text after independent support checks.
+# Verify article navigation independently from the identical live-rail headline.
 on:
   push:
     branches: [codex/breaking-news-desk]
