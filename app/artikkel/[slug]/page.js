@@ -6,6 +6,7 @@ import { fullDate, marketDelta, marketValue } from '../../../lib/format';
 import { Header } from '../../components';
 import LiveNewsRail from '../../LiveNewsRail';
 import ArticleProse from '../../ArticleProse';
+import BreakingArticleStatus from '../../BreakingArticleStatus';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export default async function ArticlePage({ params }) {
     headline: article.tittel,
     description: descriptionOf(article),
     datePublished: published,
-    dateModified: published,
+    dateModified: article.updated_at ? new Date(article.updated_at).toISOString() : published,
     mainEntityOfPage: canonical,
     articleSection: article.seksjon || undefined,
     author: [{
@@ -82,18 +83,21 @@ export default async function ArticlePage({ params }) {
         <article className="articleBody">
           <div className="breadcrumbs"><Link href="/">Forside</Link> / {article.seksjon}</div>
           <div className="eyebrow">{article.seksjon}</div>
+          {article.breaking_event_id && <BreakingArticleStatus until={article.breaking_until} />}
           <h1>{article.tittel}</h1>
           {article.undertittel && <p className="articleDek">{article.undertittel}</p>}
           <div className="articleMeta">
-            <div><b>Av {article.forfatter || 'Kapitalstrøm'}</b><br/><span>Publisert {fullDate(article.publisert_at || article.created_at)}</span></div>
+            <div><b>Av {article.forfatter || 'Kapitalstrøm'}</b><br/><span>Publisert {fullDate(article.publisert_at || article.created_at)}</span>{article.updated_at && new Date(article.updated_at)>new Date(article.publisert_at) && <><br/><span>Oppdatert {fullDate(article.updated_at)}</span></>}</div>
             <div><button>Del</button><button>Lagre</button></div>
           </div>
-          <figure>
-            {article.bilde_url
-              ? <img src={article.bilde_url} alt="" className="articlePhoto" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}/>
-              : <div className="photoPlaceholder articlePhoto"><span>FOTO 16:9 — bildeplassholder</span></div>}
-            <figcaption>{article.bilde_kreditt || (article.bilde_url ? 'Bildekreditering mangler.' : 'Bilde kobles til i redaksjonen.')}</figcaption>
-          </figure>
+          {article.bilde_url && <figure>
+            <img src={article.bilde_url} alt="" className="articlePhoto" style={{width:'100%',height:'auto',display:'block',objectFit:'cover'}} />
+            {article.bilde_kreditt && <figcaption>{article.bilde_kreditt}</figcaption>}
+          </figure>}
+          {article.summary_points?.length>0 && <details className="articleSummary"><summary>Saken oppsummert</summary>
+            <ul>{article.summary_points.map((point,i)=><li key={i}>{point}</li>)}</ul>
+            <small>Automatisk oppsummering av de kildebekreftede opplysningene i saken.</small>
+          </details>}
           <ArticleProse body={article.brodtekst}/>
         </article>
         <aside className="articleSidebar">
