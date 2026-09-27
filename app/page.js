@@ -3,6 +3,7 @@ import { getHomeData } from '../lib/db';
 import { marketDelta, marketValue, relativeTime } from '../lib/format';
 import { Header } from './components';
 import LiveNewsRail from './LiveNewsRail';
+import BreakingBanner from './BreakingBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,7 @@ export default async function Home() {
     <>
       <Header markets={markets} />
       <LiveNewsRail items={feed} />
+      <BreakingBanner initialStory={articles.find(a=>a.breaking_until && new Date(a.breaking_until)>new Date())||null} />
 
       <main className="frontShell">
         <section className="frontHero">
