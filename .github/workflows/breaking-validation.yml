@@ -1,5 +1,5 @@
 name: Breaking desk isolated validation
-# Verify article navigation independently from the identical live-rail headline.
+# Check visible summary bullet markers as well as the complete publication flow.
 on:
   push:
     branches: [codex/breaking-news-desk]
