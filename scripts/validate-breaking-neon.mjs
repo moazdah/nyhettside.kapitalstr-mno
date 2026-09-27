@@ -54,5 +54,5 @@ if(process.argv[1]?.endsWith('validate-breaking-neon.mjs')) {
   console.log(JSON.stringify({ok:true,historicalReplay:true,officialHeadline:evidence.headline,flashMs,enrichmentMs:Date.now()-start,articleId:a.article_id,sameArticle:true,verified:true}));
   // Browser validation creates its own flash from the same official evidence.
   await cleanup(sql,evidence.url);
- } catch(error) {console.error(JSON.stringify({ok:false,message:String(error.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[REDACTED]').slice(0,500)}));process.exitCode=1;}
+ } catch(error) {console.error(JSON.stringify({ok:false,message:String(error.message).replace(/postgres(?:ql)?:\/\/\S+/g,'[REDACTED]').slice(0,500),verificationDetails:error.details}));process.exitCode=1;}
 }
