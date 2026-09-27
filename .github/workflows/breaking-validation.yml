@@ -1,5 +1,5 @@
 name: Breaking desk isolated validation
-# Revalidate structured verification and final automatic-publication guards.
+# Revalidate independent live switch and inspect strict source evidence checks.
 on:
   push:
     branches: [codex/breaking-news-desk]
